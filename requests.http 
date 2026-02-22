@@ -1,0 +1,8 @@
+### Получить все туры
+GET http://localhost:8080/api/tours
+
+### Получить туры по стране (Италия)
+GET http://localhost:8080/api/tours?country=Италия
+
+### Получить тур по ID
+GET http://localhost:8080/api/tours/1
