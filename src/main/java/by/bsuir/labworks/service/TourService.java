@@ -19,14 +19,14 @@ public class TourService {
   public List<TourDto> getAllTours() {
     return tourRepository.findAll().stream()
     .map(tourMapper::toDto)
-    .collect(Collectors.toList());
+    .collect(Stream.toList());
   }
 
   // GET с @RequestParam будет вызывать этот метод
   public List<TourDto> getToursByCountry(String country) {
     return tourRepository.findByCountry(country).stream()
     .map(tourMapper::toDto)
-    .collect(Collectors.toList());
+    .collect(Stream.toList());
   }
 
   // GET с @PathVariable будет вызывать этот метод
