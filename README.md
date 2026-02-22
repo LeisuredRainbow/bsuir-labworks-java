@@ -24,12 +24,19 @@
 
 ## Структура проекта
 src/main/java/by/bsuir/labworks/
+
 ├── controller/ # REST контроллеры (TourController)
+
 ├── service/ # бизнес-логика (TourService)
+
 ├── repository/ # JPA репозитории (TourRepository)
+
 ├── model/ # сущности JPA (Tour)
+
 ├── dto/ # DTO (TourDto)
+
 ├── mapper/ # мапперы (TourMapper)
+
 └── LabworksApplication.java
 
 ## Запуск
