@@ -3,9 +3,20 @@ package by.bsuir.labworks.mapper;
 import by.bsuir.labworks.dto.TourDto;
 import by.bsuir.labworks.model.Tour;
 import org.springframework.stereotype.Component;
+/**
+ * Маппер для преобразования между сущностью Tour и DTO TourDto.
+ */
 
 @Component // Чтобы Spring мог внедрить этот компонент в сервис
 public class TourMapper {
+  
+  /**
+   * Преобразует сущность Tour в DTO TourDto.
+
+   * @param tour сущность
+   * @return DTO
+   */
+
   public TourDto toDto(Tour tour) {
     if (tour == null) {
       return null;
@@ -21,7 +32,13 @@ public class TourMapper {
     return dto;
   }
 
-  // Метод для преобразования DTO в сущность (понадобится для POST/PUT)
+  /**
+   * Преобразует DTO TourDto в сущность Tour.
+
+   * @param dto DTO
+   * @return сущность
+   */
+
   public Tour toEntity(TourDto dto) {
     if (dto == null) {
       return null;

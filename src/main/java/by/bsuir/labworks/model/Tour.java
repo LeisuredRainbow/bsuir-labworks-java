@@ -9,6 +9,10 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+/**
+ * Сущность, представляющая тур в туристическом агентстве.
+ * Содержит основные характеристики тура: название, страну, цену и т.д.
+ */
 
 @Entity
 @Table(name = "tours")

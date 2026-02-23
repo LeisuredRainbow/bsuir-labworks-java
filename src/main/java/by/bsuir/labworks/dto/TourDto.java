@@ -2,6 +2,10 @@ package by.bsuir.labworks.dto;
 
 import java.math.BigDecimal;
 import lombok.Data;
+/**
+ * DTO для передачи данных тура.
+ * Содержит все поля, которые возвращаются клиенту или принимаются от клиента.
+ */
 
 @Data
 public class TourDto {
