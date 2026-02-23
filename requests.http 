@@ -12,9 +12,9 @@ POST http://localhost:8080/api/tours
 Content-Type: application/json
 
 {
-    "name": "Отдых в Турции",
-    "country": "Турция",
-    "durationDays": 7,
-    "price": 500.00,
-    "hot": true
+    "name": "Беловежский Трип",
+    "country": "Беларусь",
+    "durationDays": 9,
+    "price": 123.54,
+    "hot": false
 }

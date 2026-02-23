@@ -17,6 +17,6 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
    * @param country название страны
    * @return список туров
    */
-
+  
   List<Tour> findByCountry(String country);
 }
