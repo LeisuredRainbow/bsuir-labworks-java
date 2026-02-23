@@ -1,4 +1,4 @@
-@startuml
+@startuml lab1
 ' Настройка внешнего вида
 skinparam classAttributeIconSize 0
 skinparam classFontSize 12
