@@ -61,7 +61,9 @@ GET http://localhost:8080/api/tours?country=Италия
 ### Получить тур по ID
 GET http://localhost:8080/api/tours/1
 
+```
 ### POST-запрос (создание тура)
+```http
 ### Создать новый тур
 POST http://localhost:8080/api/tours
 Content-Type: application/json
@@ -73,9 +75,12 @@ Content-Type: application/json
     "price": 500.00,
     "hot": true
 }
-
-После успешного создания в ответе придёт JSON с присвоенным id. Затем GET-запросы будут возвращать созданные туры.
+```
+После успешного создания в ответе придёт JSON с присвоенным id. Затем GET-запросы будут воз-
+вращать созданные туры.
 
 Проверка стиля кода
+```http
 ./mvnw checkstyle:check
+```
 (после исправления замечаний должно быть 0 ошибок)
