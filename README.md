@@ -83,3 +83,9 @@ Content-Type: application/json
 ./mvnw checkstyle:check
 ```
 (после исправления замечаний должно быть 0 ошибок)
+
+Были использованы gitignore и SonarCloud
+
+```http(https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main)```
+
+SonarCloud = 0
