@@ -1,0 +1,128 @@
+@startuml
+' Настройка внешнего вида
+skinparam classAttributeIconSize 0
+skinparam classFontSize 12
+skinparam classFontName Arial
+skinparam classBorderColor Black
+skinparam classBackgroundColor LightGray
+skinparam arrowColor Black
+skinparam arrowThickness 1
+
+' ========== Классы ==========
+
+class Tour {
+  - id: Long
+  - name: String
+  - description: String
+  - country: String
+  - durationDays: Integer
+  - price: BigDecimal
+  - isHot: boolean
+  --
+  + Tour()
+  + getId(): Long
+  + setId(id: Long): void
+  + getName(): String
+  + setName(name: String): void
+  + getDescription(): String
+  + setDescription(description: String): void
+  + getCountry(): String
+  + setCountry(country: String): void
+  + getDurationDays(): Integer
+  + setDurationDays(durationDays: Integer): void
+  + getPrice(): BigDecimal
+  + setPrice(price: BigDecimal): void
+  + isHot(): boolean
+  + setHot(hot: boolean): void
+  + equals(o: Object): boolean
+  + hashCode(): int
+  + toString(): String
+}
+
+class TourDto {
+  - id: Long
+  - name: String
+  - description: String
+  - country: String
+  - durationDays: Integer
+  - price: BigDecimal
+  - isHot: boolean
+  --
+  + TourDto()
+  + getId(): Long
+  + setId(id: Long): void
+  + getName(): String
+  + setName(name: String): void
+  + getDescription(): String
+  + setDescription(description: String): void
+  + getCountry(): String
+  + setCountry(country: String): void
+  + getDurationDays(): Integer
+  + setDurationDays(durationDays: Integer): void
+  + getPrice(): BigDecimal
+  + setPrice(price: BigDecimal): void
+  + isHot(): boolean
+  + setHot(hot: boolean): void
+  + equals(o: Object): boolean
+  + hashCode(): int
+  + toString(): String
+}
+
+interface JpaRepository<T, ID> <<interface>> {
+  + findAll(): List<T>
+  + findById(id: ID): Optional<T>
+  + save(entity: T): T
+  + deleteById(id: ID): void
+}
+
+interface TourRepository <<interface>> {
+  + findByCountry(country: String): List<Tour>
+}
+
+class TourMapper {
+  + toDto(tour: Tour): TourDto
+  + toEntity(dto: TourDto): Tour
+}
+
+class TourService {
+  - tourRepository: TourRepository
+  - tourMapper: TourMapper
+  --
+  + getAllTours(): List<TourDto>
+  + getToursByCountry(country: String): List<TourDto>
+  + getTourById(id: Long): TourDto
+  + createTour(dto: TourDto): TourDto
+}
+
+class TourController {
+  - tourService: TourService
+  --
+  + getTours(@RequestParam country: String): List<TourDto>
+  + getTourById(@PathVariable id: Long): TourDto
+  + createTour(@RequestBody dto: TourDto): TourDto
+}
+
+' ========== Связи ==========
+
+' Наследование интерфейсов
+JpaRepository <|-- TourRepository : extends
+
+' Реализация интерфейса (хотя в Java это implements, но в UML стрелка такая же)
+TourRepository <|.. TourService : использует
+
+' Ассоциации (композиция/агрегация)
+TourService *--> TourRepository : содержит
+TourService *--> TourMapper : содержит
+
+TourController *--> TourService : содержит
+
+' Зависимости (использование в методах)
+TourService ..> Tour : создаёт/читает
+TourService ..> TourDto : возвращает
+TourMapper ..> Tour : преобразует
+TourMapper ..> TourDto : преобразует
+
+' Примечание: от контроллера к DTO
+TourController ..> TourDto : возвращает/принимает
+
+@enduml
