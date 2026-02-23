@@ -82,10 +82,10 @@ Content-Type: application/json
 ```http
 ./mvnw checkstyle:check
 ```
-(после исправления замечаний должно быть 0 ошибок)
+(после исправления замечаний должно быть 0 ошибок).
 
-Были использованы gitignore и SonarCloud
+Были использованы gitignore и SonarCloud:
 
 ```http(https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main)```
 
-SonarCloud = 0
+SonarCloud = 0.
