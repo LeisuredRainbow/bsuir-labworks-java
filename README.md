@@ -3,15 +3,16 @@
 **Тема:** Туристическое агентство  
 **Сущность:** Тур (`Tour`)  
 **Выполнил:** Студент группы [450504] [Толкач Доминик Геннадьевич]  
-**GitHub:** [https://github.com/LeisuredRainbow/bsuir-labworks-java]
+**GitHub:** [https://github.com/LeisuredRainbow/bsuir-labworks-java](https://github.com/LeisuredRainbow/bsuir-labworks-java)
 
 ## Описание проекта
 Данный проект представляет собой REST API для туристического агентства. Реализован базовый CRUD для сущности `Tour` (согласно требованиям лабораторной работы №1). Проект построен на Spring Boot с использованием Maven, JPA (H2), Lombok.
 
 ## Функциональность
-- Получение списка всех туров: `GET /api/tours`
-- Получение тура по ID: `GET /api/tours/{id}`
-- Фильтрация туров по стране: `GET /api/tours?country={country}`
+- **Получение списка всех туров:** `GET /api/tours`
+- **Получение тура по ID:** `GET /api/tours/{id}`
+- **Фильтрация туров по стране:** `GET /api/tours?country={country}`
+- **Создание нового тура:** `POST /api/tours` (с телом JSON)
 
 ## Технологии
 - Java 17
@@ -47,11 +48,34 @@ src/main/java/by/bsuir/labworks/
 4. Приложение будет доступно по адресу `http://localhost:8080`
 
 ## Примеры запросов
-Файл `requests.http` содержит тестовые запросы:
-- `GET http://localhost:8080/api/tours`
-- `GET http://localhost:8080/api/tours?country=Италия`
-- `GET http://localhost:8080/api/tours/1`
+Файл `requests.http` содержит тестовые запросы. Ниже приведены примеры для ручного тестирования.
 
-## Проверка стиля кода
-```bash
+### GET-запросы
+```http
+### Получить все туры
+GET http://localhost:8080/api/tours
+
+### Получить туры по стране (Италия)
+GET http://localhost:8080/api/tours?country=Италия
+
+### Получить тур по ID
+GET http://localhost:8080/api/tours/1
+
+### POST-запрос (создание тура)
+### Создать новый тур
+POST http://localhost:8080/api/tours
+Content-Type: application/json
+
+{
+    "name": "Отдых в Турции",
+    "country": "Турция",
+    "durationDays": 7,
+    "price": 500.00,
+    "hot": true
+}
+
+После успешного создания в ответе придёт JSON с присвоенным id. Затем GET-запросы будут возвращать созданные туры.
+
+Проверка стиля кода
 ./mvnw checkstyle:check
+(после исправления замечаний должно быть 0 ошибок)
