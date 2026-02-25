@@ -8,6 +8,11 @@
 ## Описание проекта
 Данный проект представляет собой REST API для туристического агентства. Реализован базовый CRUD для сущности `Tour` (согласно требованиям лабораторной работы №1). Проект построен на Spring Boot с использованием Maven, JPA (H2), Lombok.
 
+В код добавлена валидация входных данных и обработка ошибок:
+- При создании тура (`POST`) проверяется корректность полей (например, название не может быть пустым, цена – положительной).
+- При запросе несуществующего тура возвращается статус `404 Not Found` с пояснением.
+- При невалидных данных – статус `400 Bad Request` со списком ошибок.
+
 ## Функциональность
 - **Получение списка всех туров:** `GET /api/tours`
 - **Получение тура по ID:** `GET /api/tours/{id}`
@@ -20,6 +25,7 @@
 - Spring Web, Spring Data JPA
 - H2 Database (in-memory)
 - Lombok
+- Jakarta Bean Validation
 - Maven
 - Checkstyle (Google Java Style)
 
@@ -34,7 +40,7 @@ src/main/java/by/bsuir/labworks/
 
 ├── model/ # сущности JPA (Tour)
 
-├── dto/ # DTO (TourDto)
+├── dto/ # DTO (TourDto) с аннотациями валидации
 
 ├── mapper/ # мапперы (TourMapper)
 
@@ -48,14 +54,13 @@ src/main/java/by/bsuir/labworks/
 4. Приложение будет доступно по адресу `http://localhost:8080`
 
 ## Примеры запросов
-Файл `requests.http` содержит тестовые запросы. Ниже приведены примеры для ручного тестирования.
 
-### GET-запросы
+### GET-запросы (все успешные)
 ```http
 ### Получить все туры
 GET http://localhost:8080/api/tours
 
-### Получить туры по стране (Италия)
+### Получить туры по стране
 GET http://localhost:8080/api/tours?country=Италия
 
 ### Получить тур по ID
@@ -75,6 +80,7 @@ Content-Type: application/json
     "price": 500.00,
     "hot": true
 }
+
 ```
 После успешного создания в ответе придёт JSON с присвоенным id. Затем GET-запросы будут возвращать созданные туры.
 
@@ -86,6 +92,6 @@ Content-Type: application/json
 
 Были использованы gitignore и SonarCloud:
 
-```http(https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main)```
+```https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main```
 
 SonarCloud = 0.
