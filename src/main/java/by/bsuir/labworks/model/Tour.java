@@ -9,15 +9,11 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-/**
- * Сущность, представляющая тур в туристическом агентстве.
- * Содержит основные характеристики тура: название, страну, цену и т.д.
- */
 
 @Entity
 @Table(name = "tours")
-@Data // Lombok: генерирует геттеры, сеттеры, toString, equals, hashCode
-@NoArgsConstructor // Lombok: генерирует пустой конструктор
+@Data
+@NoArgsConstructor
 public class Tour {
 
   @Id
@@ -32,11 +28,11 @@ public class Tour {
   @Column(nullable = false)
   private String country;
 
-  private Integer durationDays; // Продолжительность в днях
+  private Integer durationDays;
 
   @Column(nullable = false, precision = 10, scale = 2)
-  private BigDecimal price; // Использует BigDecimal для денег
+  private BigDecimal price;
 
   @Column(name = "is_hot")
-  private boolean isHot; // Горящий тур или нет
+  private boolean isHot;
 }

@@ -8,14 +8,10 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import lombok.Data;
-/**
- * DTO для передачи данных тура.
- * Содержит все поля, которые возвращаются клиенту или принимаются от клиента.
- */
 
 @Data
 public class TourDto {
-  private Long id; // id не должен передаваться при создании, поэтому без валидации
+  private Long id;
 
   @NotBlank(message = "Название тура не может быть пустым")
   @Size(max = 100, message = "Название тура не может быть длиннее 100 символов")
@@ -37,5 +33,5 @@ public class TourDto {
       message = "Цена должна иметь не более 10 целых и 2 дробных знаков")
   private BigDecimal price;
 
-  private boolean isHot; // boolean имеет значение по умолчанию false, можно не валидировать
+  private boolean isHot;
 }
