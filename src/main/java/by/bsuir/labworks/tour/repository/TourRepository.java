@@ -1,9 +1,10 @@
-package by.bsuir.labworks.repository;
+package by.bsuir.labworks.tour.repository;
 
-import by.bsuir.labworks.model.Tour;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import by.bsuir.labworks.tour.entity.Tour;
 
 @Repository
 public interface TourRepository extends JpaRepository<Tour, Long> {

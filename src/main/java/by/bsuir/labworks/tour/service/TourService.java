@@ -1,9 +1,10 @@
-package by.bsuir.labworks.service;
+package by.bsuir.labworks.tour.service;
 
-import by.bsuir.labworks.dto.TourDto;
-import by.bsuir.labworks.mapper.TourMapper;
-import by.bsuir.labworks.model.Tour;
-import by.bsuir.labworks.repository.TourRepository;
+import by.bsuir.labworks.common.TourMapper;
+import by.bsuir.labworks.tour.dto.TourDto;
+import by.bsuir.labworks.tour.entity.Tour;
+import by.bsuir.labworks.tour.repository.TourRepository;
+
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

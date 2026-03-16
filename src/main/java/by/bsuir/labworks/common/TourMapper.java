@@ -1,7 +1,8 @@
-package by.bsuir.labworks.mapper;
+package by.bsuir.labworks.common;
 
-import by.bsuir.labworks.dto.TourDto;
-import by.bsuir.labworks.model.Tour;
+import by.bsuir.labworks.tour.dto.TourDto;
+import by.bsuir.labworks.tour.entity.Tour;
+
 import org.springframework.stereotype.Component;
 
 @Component

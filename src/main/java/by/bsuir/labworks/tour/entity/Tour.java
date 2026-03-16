@@ -1,4 +1,4 @@
-package by.bsuir.labworks.model;
+package by.bsuir.labworks.tour.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

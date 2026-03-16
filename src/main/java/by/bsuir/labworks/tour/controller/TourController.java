@@ -1,7 +1,7 @@
-package by.bsuir.labworks.controller;
+package by.bsuir.labworks.tour.controller;
 
-import by.bsuir.labworks.dto.TourDto;
-import by.bsuir.labworks.service.TourService;
+import by.bsuir.labworks.tour.dto.TourDto;
+import by.bsuir.labworks.tour.service.TourService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

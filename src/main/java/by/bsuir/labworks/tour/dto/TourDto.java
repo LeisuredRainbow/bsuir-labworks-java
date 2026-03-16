@@ -1,4 +1,4 @@
-package by.bsuir.labworks.dto;
+package by.bsuir.labworks.tour.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
