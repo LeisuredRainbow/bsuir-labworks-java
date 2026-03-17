@@ -39,4 +39,16 @@ public class TourController {
   public TourResponseDto createTour(@RequestBody @Valid TourRequestDto tourDto) {
     return tourService.createTour(tourDto);
   }
+
+  @GetMapping("/demo/nplus1")
+  public String demoNplusOne() {
+    tourService.demonstrateNplusOneProblem();
+    return "N+1 problem demonstrated. Check logs.";
+  }
+
+  @GetMapping("/demo/solution")
+  public String demoSolution() {
+    tourService.demonstrateSolutionWithEntityGraph();
+    return "Solution with @EntityGraph demonstrated. Check logs.";
+  }
 }
