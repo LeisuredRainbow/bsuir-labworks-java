@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface HotelMapper {
   @Mapping(target = "id", ignore = true)
+  @Mapping(target = "tours", ignore = true)
   Hotel toEntity(HotelRequestDto dto);
 
   HotelResponseDto toResponseDto(Hotel hotel);

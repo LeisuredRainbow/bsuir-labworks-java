@@ -1,11 +1,15 @@
 package by.bsuir.labworks.guide.entity;
 
+import by.bsuir.labworks.tour.entity.Tour;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Entity
@@ -27,4 +31,7 @@ public class Guide {
   private String email;
 
   private Integer experienceYears;
+
+  @ManyToMany(mappedBy = "guides")
+  private List<Tour> tours = new ArrayList<>();
 }
