@@ -6,7 +6,6 @@ import by.bsuir.labworks.tour.entity.Tour;
 import by.bsuir.labworks.tour.mapper.TourMapper;
 import by.bsuir.labworks.tour.repository.TourRepository;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +18,13 @@ public class TourService {
   public List<TourResponseDto> getAllTours() {
     return tourRepository.findAll().stream()
       .map(tourMapper::toResponseDto)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public List<TourResponseDto> getToursByCountry(String country) {
     return tourRepository.findByCountry(country).stream()
       .map(tourMapper::toResponseDto)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public TourResponseDto getTourById(Long id) {
