@@ -8,22 +8,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "tours")
 @Data
-@NoArgsConstructor
 public class Tour {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @Column(nullable = false)
   private String name;
-
-  private String description;
 
   @Column(nullable = false)
   private String country;
@@ -33,6 +28,7 @@ public class Tour {
   @Column(nullable = false, precision = 10, scale = 2)
   private BigDecimal price;
 
-  @Column(name = "is_hot")
-  private boolean isHot;
+  private Boolean hot; // true — горящий тур
+
+  private String description; // описание тура
 }
