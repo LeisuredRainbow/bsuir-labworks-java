@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -27,4 +28,8 @@ public class TourRequestDto {
 
   @Size(max = 1000, message = "Описание не должно превышать 1000 символов")
   private String description;
+
+  private List<Long> hotelIds;
+
+  private List<Long> guideIds;
 }

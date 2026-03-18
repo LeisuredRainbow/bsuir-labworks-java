@@ -15,8 +15,8 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
 
 @Entity
@@ -48,7 +48,7 @@ public class Tour {
       joinColumns = @JoinColumn(name = "tour_id"),
       inverseJoinColumns = @JoinColumn(name = "hotel_id")
   )
-  private List<Hotel> hotels = new ArrayList<>();
+  private Set<Hotel> hotels = new HashSet<>();
 
   @ManyToMany
   @JoinTable(
@@ -56,8 +56,8 @@ public class Tour {
       joinColumns = @JoinColumn(name = "tour_id"),
       inverseJoinColumns = @JoinColumn(name = "guide_id")
   )
-  private List<Guide> guides = new ArrayList<>();
+  private Set<Guide> guides = new HashSet<>();
 
   @OneToMany(mappedBy = "tour", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Booking> bookings = new ArrayList<>();
+  private Set<Booking> bookings = new HashSet<>();
 }

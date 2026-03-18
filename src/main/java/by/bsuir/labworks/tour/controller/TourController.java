@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -38,6 +39,12 @@ public class TourController {
   @PostMapping
   public TourResponseDto createTour(@RequestBody @Valid TourRequestDto tourDto) {
     return tourService.createTour(tourDto);
+  }
+
+  @PutMapping("/{id}")
+  public TourResponseDto updateTour(@PathVariable Long id,
+                                    @RequestBody @Valid TourRequestDto tourDto) {
+    return tourService.updateTour(id, tourDto);
   }
 
   @GetMapping("/demo/nplus1")
