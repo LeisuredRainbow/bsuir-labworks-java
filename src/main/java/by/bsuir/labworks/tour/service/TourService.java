@@ -9,11 +9,11 @@ import by.bsuir.labworks.tour.dto.TourResponseDto;
 import by.bsuir.labworks.tour.entity.Tour;
 import by.bsuir.labworks.tour.mapper.TourMapper;
 import by.bsuir.labworks.tour.repository.TourRepository;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,21 +77,9 @@ public class TourService {
     }
   }
 
-  @Transactional
-  public void demonstrateNplusOneProblem() {
-    List<Tour> tours = tourRepository.findAll();
-    for (Tour tour : tours) {
-      Hibernate.initialize(tour.getHotels());
-      Hibernate.initialize(tour.getGuides());
-    }
-  }
-
-  @Transactional
-  public void demonstrateSolutionWithEntityGraph() {
-    List<Tour> tours = tourRepository.findAllWithHotelsAndGuides();
-    for (Tour tour : tours) {
-      Hibernate.initialize(tour.getHotels());
-      Hibernate.initialize(tour.getGuides());
-    }
+  public List<TourResponseDto> getToursByPrice(BigDecimal price) {
+    return tourRepository.findByPrice(price).stream()
+      .map(tourMapper::toResponseDto)
+      .toList();
   }
 }

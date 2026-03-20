@@ -4,6 +4,7 @@ import by.bsuir.labworks.tour.dto.TourRequestDto;
 import by.bsuir.labworks.tour.dto.TourResponseDto;
 import by.bsuir.labworks.tour.service.TourService;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,7 @@ public class TourController {
     return tourService.getAllTours();
   }
 
-  @GetMapping(params = "country")
+  @GetMapping("/country")
   public List<TourResponseDto> getToursByCountry(@RequestParam String country) {
     return tourService.getToursByCountry(country);
   }
@@ -47,15 +48,8 @@ public class TourController {
     return tourService.updateTour(id, tourDto);
   }
 
-  @GetMapping("/demo/nplus1")
-  public String demoNplusOne() {
-    tourService.demonstrateNplusOneProblem();
-    return "N+1 problem demonstrated. Check logs.";
-  }
-
-  @GetMapping("/demo/solution")
-  public String demoSolution() {
-    tourService.demonstrateSolutionWithEntityGraph();
-    return "Solution with @EntityGraph demonstrated. Check logs.";
+  @GetMapping("/price")
+  public List<TourResponseDto> getToursByPrice(@RequestParam BigDecimal price) {
+    return tourService.getToursByPrice(price);
   }
 }
