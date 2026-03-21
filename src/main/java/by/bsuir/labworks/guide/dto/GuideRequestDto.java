@@ -14,7 +14,8 @@ public class GuideRequestDto {
   @NotBlank(message = "Фамилия обязательна")
   private String lastName;
 
-  @Pattern(regexp = "^\\+?[0-9\\-\\s]+$", message = "Некорректный формат телефона")
+  @Pattern(regexp = "^\\+375[\\s-]?\\(\\d{2}\\)[\\s-]?\\d{3}[\\s-]?\\d{2}[\\s-]?\\d{2}$",
+         message = "Некорректный формат телефона (ожидается +375(xx)xxx-xx-xx)")
   private String phone;
 
   @Email(message = "Некорректный формат email")

@@ -5,6 +5,8 @@ import by.bsuir.labworks.guide.dto.GuideResponseDto;
 import by.bsuir.labworks.guide.entity.Guide;
 import by.bsuir.labworks.guide.mapper.GuideMapper;
 import by.bsuir.labworks.guide.repository.GuideRepository;
+import by.bsuir.labworks.tour.repository.TourRepository;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class GuideService {
   private final GuideRepository guideRepository;
   private final GuideMapper guideMapper;
+  private final TourRepository tourRepository;
 
   public List<GuideResponseDto> getAllGuides() {
     return guideRepository.findAll().stream()
@@ -46,10 +49,12 @@ public class GuideService {
     return guideMapper.toResponseDto(existingGuide);
   }
 
+  @Transactional
   public void deleteGuide(Long id) {
     if (!guideRepository.existsById(id)) {
       throw new NoSuchElementException("Guide not found with id: " + id);
     }
+    tourRepository.removeGuideFromAllTours(id); // метод удаления связей
     guideRepository.deleteById(id);
   }
 }

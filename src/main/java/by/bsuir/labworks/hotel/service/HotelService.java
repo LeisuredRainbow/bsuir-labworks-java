@@ -5,6 +5,7 @@ import by.bsuir.labworks.hotel.dto.HotelResponseDto;
 import by.bsuir.labworks.hotel.entity.Hotel;
 import by.bsuir.labworks.hotel.mapper.HotelMapper;
 import by.bsuir.labworks.hotel.repository.HotelRepository;
+import by.bsuir.labworks.tour.repository.TourRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class HotelService {
   private final HotelRepository hotelRepository;
   private final HotelMapper hotelMapper;
+  private final TourRepository tourRepository;
 
   public List<HotelResponseDto> getAllHotels() {
     return hotelRepository.findAll().stream()
@@ -55,6 +57,7 @@ public class HotelService {
     if (!hotelRepository.existsById(id)) {
       throw new NoSuchElementException("Hotel not found with id: " + id);
     }
+    tourRepository.removeHotelFromAllTours(id);
     hotelRepository.deleteById(id);
   }
 }

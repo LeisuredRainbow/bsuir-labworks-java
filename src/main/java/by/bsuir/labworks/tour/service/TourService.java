@@ -27,19 +27,19 @@ public class TourService {
 
   public List<TourResponseDto> getAllTours() {
     return tourRepository.findAll().stream()
-        .map(tourMapper::toResponseDto)
-        .toList();
+    .map(tourMapper::toResponseDto)
+    .toList();
   }
 
   public List<TourResponseDto> getToursByCountry(String country) {
     return tourRepository.findByCountry(country).stream()
-        .map(tourMapper::toResponseDto)
-        .toList();
+    .map(tourMapper::toResponseDto)
+    .toList();
   }
 
   public TourResponseDto getTourById(Long id) {
     Tour tour = tourRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
+          .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
     return tourMapper.toResponseDto(tour);
   }
 
@@ -53,7 +53,7 @@ public class TourService {
   @Transactional
   public TourResponseDto updateTour(Long id, TourRequestDto tourDto) {
     Tour existingTour = tourRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
+          .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
     tourMapper.updateEntity(tourDto, existingTour);
     setHotelAndGuideRelations(existingTour, tourDto);
     existingTour = tourRepository.save(existingTour);
@@ -61,17 +61,25 @@ public class TourService {
   }
 
   private void setHotelAndGuideRelations(Tour tour, TourRequestDto dto) {
-    if (dto.getHotelIds() != null) {
+    if (dto.getHotelIds() != null && !dto.getHotelIds().isEmpty()) {
       List<Hotel> hotels = hotelRepository.findAllById(dto.getHotelIds());
       if (hotels.size() != dto.getHotelIds().size()) {
-        throw new NoSuchElementException("Some hotels not found");
+        List<Long> foundIds = hotels.stream().map(Hotel::getId).toList();
+        List<Long> missingIds = dto.getHotelIds().stream()
+              .filter(id -> !foundIds.contains(id))
+            .toList();
+        throw new NoSuchElementException("Hotels not found with ids: " + missingIds);
       }
       tour.setHotels(new HashSet<>(hotels));
     }
-    if (dto.getGuideIds() != null) {
+    if (dto.getGuideIds() != null && !dto.getGuideIds().isEmpty()) {
       List<Guide> guides = guideRepository.findAllById(dto.getGuideIds());
       if (guides.size() != dto.getGuideIds().size()) {
-        throw new NoSuchElementException("Some guides not found");
+        List<Long> foundIds = guides.stream().map(Guide::getId).toList();
+        List<Long> missingIds = dto.getGuideIds().stream()
+            .filter(id -> !foundIds.contains(id))
+            .toList();
+        throw new NoSuchElementException("Guides not found with ids: " + missingIds);
       }
       tour.setGuides(new HashSet<>(guides));
     }
@@ -79,7 +87,27 @@ public class TourService {
 
   public List<TourResponseDto> getToursByPrice(BigDecimal price) {
     return tourRepository.findByPrice(price).stream()
-      .map(tourMapper::toResponseDto)
-      .toList();
+    .map(tourMapper::toResponseDto)
+    .toList();
+  }
+
+  public List<TourResponseDto> getToursByMinPrice(BigDecimal minPrice) {
+    return tourRepository.findByPriceGreaterThanEqual(minPrice).stream()
+    .map(tourMapper::toResponseDto)
+    .toList();
+  }
+
+  public List<TourResponseDto> getToursByMaxPrice(BigDecimal maxPrice) {
+    return tourRepository.findByPriceLessThanEqualWithGraph(maxPrice).stream()
+    .map(tourMapper::toResponseDto)
+    .toList();
+  }
+
+  @Transactional
+  public void deleteTour(Long id) {
+    if (!tourRepository.existsById(id)) {
+      throw new NoSuchElementException("Tour not found with id: " + id);
+    }
+    tourRepository.deleteById(id);
   }
 }
