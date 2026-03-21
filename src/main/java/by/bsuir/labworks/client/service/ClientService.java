@@ -35,6 +35,11 @@ public class ClientService {
   }
 
   public ClientResponseDto createClient(ClientRequestDto clientDto) {
+    if (clientDto.getPhone() != null
+        && clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+      throw new IllegalArgumentException("Client with phone "
+          + clientDto.getPhone() + " already exists");
+    }
     Client client = clientMapper.toEntity(clientDto);
     client = clientRepository.save(client);
     return clientMapper.toResponseDto(client);
@@ -43,6 +48,13 @@ public class ClientService {
   public ClientResponseDto updateClient(Long id, ClientRequestDto clientDto) {
     Client existingClient = clientRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException("Client not found with id: " + id));
+    if (clientDto.getPhone() != null
+        && !clientDto.getPhone().equals(existingClient.getPhone())
+            && clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+      throw new IllegalArgumentException("Client with phone "
+      + clientDto.getPhone() + " already exists");
+    }
+    
     existingClient.setFirstName(clientDto.getFirstName());
     existingClient.setLastName(clientDto.getLastName());
     existingClient.setEmail(clientDto.getEmail());

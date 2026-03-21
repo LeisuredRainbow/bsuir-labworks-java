@@ -8,12 +8,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 
 @Entity
-@Table(name = "hotels")
+@Table(name = "hotels",
+       uniqueConstraints = @UniqueConstraint(columnNames = {"city", "address"}))
 @Data
 public class Hotel {
   @Id

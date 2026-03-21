@@ -32,6 +32,16 @@ public class GuideService {
   }
 
   public GuideResponseDto createGuide(GuideRequestDto guideDto) {
+    if (guideDto.getEmail() != null
+        && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
+      throw new IllegalArgumentException("Guide with email "
+          + guideDto.getEmail() + " already exists");
+    }
+    if (guideDto.getPhone() != null
+        && guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+      throw new IllegalArgumentException("Guide with phone "
+          + guideDto.getPhone() + " already exists");
+    }
     Guide guide = guideMapper.toEntity(guideDto);
     guide = guideRepository.save(guide);
     return guideMapper.toResponseDto(guide);
@@ -40,6 +50,18 @@ public class GuideService {
   public GuideResponseDto updateGuide(Long id, GuideRequestDto guideDto) {
     Guide existingGuide = guideRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException("Guide not found with id: " + id));
+    if (guideDto.getEmail() != null && !guideDto.getEmail().equals(existingGuide.getEmail())
+          && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
+      throw new IllegalArgumentException("Guide with email "
+          + guideDto.getEmail() + " already exists");
+    }
+    
+    if (guideDto.getPhone() != null && !guideDto.getPhone().equals(existingGuide.getPhone())
+          && guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+      throw new IllegalArgumentException("Guide with phone "
+          + guideDto.getPhone() + " already exists");
+    }
+    
     existingGuide.setFirstName(guideDto.getFirstName());
     existingGuide.setLastName(guideDto.getLastName());
     existingGuide.setPhone(guideDto.getPhone());
@@ -54,7 +76,7 @@ public class GuideService {
     if (!guideRepository.existsById(id)) {
       throw new NoSuchElementException("Guide not found with id: " + id);
     }
-    tourRepository.removeGuideFromAllTours(id); // метод удаления связей
+    tourRepository.removeGuideFromAllTours(id);
     guideRepository.deleteById(id);
   }
 }

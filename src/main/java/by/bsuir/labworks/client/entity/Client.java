@@ -30,6 +30,7 @@ public class Client {
   @Column(nullable = false, unique = true)
   private String email;
 
+  @Column(unique = true)
   private String phone;
 
   @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)

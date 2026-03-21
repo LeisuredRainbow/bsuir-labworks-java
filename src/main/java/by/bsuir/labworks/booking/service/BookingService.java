@@ -66,6 +66,11 @@ public class BookingService {
         throw new IllegalArgumentException(
                         "Client with email " + bookingDto.getEmail() + " already exists");
       }
+      if (bookingDto.getPhone() != null
+          && clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+                        "Client with phone " + bookingDto.getPhone() + " already exists");
+      }
       Client newClient = new Client();
       newClient.setFirstName(bookingDto.getFirstName());
       newClient.setLastName(bookingDto.getLastName());
