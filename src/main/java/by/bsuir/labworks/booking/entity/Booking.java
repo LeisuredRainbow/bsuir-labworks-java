@@ -4,6 +4,8 @@ import by.bsuir.labworks.client.entity.Client;
 import by.bsuir.labworks.tour.entity.Tour;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,5 +34,13 @@ public class Booking {
   @Column(nullable = false)
   private LocalDate bookingDate;
 
-  private String status;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private BookingStatus status;
+
+  public enum BookingStatus {
+    CONFIRMED,
+    PENDING,
+    CANCELLED
+  }
 }

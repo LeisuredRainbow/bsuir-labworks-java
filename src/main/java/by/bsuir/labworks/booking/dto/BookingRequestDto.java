@@ -1,5 +1,6 @@
 package by.bsuir.labworks.booking.dto;
 
+import by.bsuir.labworks.booking.entity.Booking.BookingStatus;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -24,7 +25,8 @@ public class BookingRequestDto {
   @Future(message = "Дата бронирования должна быть в будущем")
   private LocalDate bookingDate;
 
-  private String status;
+  @NotNull(message = "Статус обязателен")
+  private BookingStatus status;
 
   public boolean isNewClient() {
     return clientId == null && firstName != null && lastName != null && email != null;

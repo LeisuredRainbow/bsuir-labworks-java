@@ -38,13 +38,14 @@ public class Tour {
   @Column(nullable = false, precision = 10, scale = 2)
   private BigDecimal price;
 
+  @Column(name = "hot")
   private Boolean hot;
 
   private String description;
 
   @ManyToMany
   @JoinTable(
-      name = "tour_hotel",
+      name = "tour_hotels",
       joinColumns = @JoinColumn(name = "tour_id"),
       inverseJoinColumns = @JoinColumn(name = "hotel_id")
   )
@@ -52,7 +53,7 @@ public class Tour {
 
   @ManyToMany
   @JoinTable(
-      name = "tour_guide",
+      name = "tour_guides",
       joinColumns = @JoinColumn(name = "tour_id"),
       inverseJoinColumns = @JoinColumn(name = "guide_id")
   )

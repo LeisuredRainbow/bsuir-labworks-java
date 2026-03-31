@@ -1,5 +1,6 @@
 package by.bsuir.labworks.booking.dto;
 
+import by.bsuir.labworks.booking.entity.Booking.BookingStatus;
 import java.time.LocalDate;
 import lombok.Data;
 
@@ -9,5 +10,5 @@ public class BookingResponseDto {
   private Long clientId;
   private Long tourId;
   private LocalDate bookingDate;
-  private String status;
+  private BookingStatus status;
 }
