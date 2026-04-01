@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
   List<Booking> findByClientId(Long clientId);
-
+  
   List<Booking> findByTourId(Long tourId);
+  
+  boolean existsByTourId(Long tourId);
 }

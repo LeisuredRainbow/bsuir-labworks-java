@@ -48,7 +48,7 @@ public class BookingService {
             .toList();
   }
 
-  @Transactional
+  //@Transactional
   public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
     if (!bookingDto.isValid()) {
       throw new IllegalArgumentException(

@@ -26,11 +26,11 @@ public interface TourRepository extends JpaRepository<Tour, Long> {
 
   @Modifying
   @Transactional
-  @Query(value = "DELETE FROM tour_hotel WHERE hotel_id = :hotelId", nativeQuery = true)
+  @Query(value = "DELETE FROM tour_hotels WHERE hotel_id = :hotelId", nativeQuery = true)
   void removeHotelFromAllTours(@Param("hotelId") Long hotelId);
 
   @Modifying
   @Transactional
-  @Query(value = "DELETE FROM tour_guide WHERE guide_id = :guideId", nativeQuery = true)
+  @Query(value = "DELETE FROM tour_guides WHERE guide_id = :guideId", nativeQuery = true)
   void removeGuideFromAllTours(@Param("guideId") Long guideId);
 }

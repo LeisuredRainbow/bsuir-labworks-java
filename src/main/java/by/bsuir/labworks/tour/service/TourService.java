@@ -1,5 +1,6 @@
 package by.bsuir.labworks.tour.service;
 
+import by.bsuir.labworks.booking.repository.BookingRepository;
 import by.bsuir.labworks.guide.entity.Guide;
 import by.bsuir.labworks.guide.repository.GuideRepository;
 import by.bsuir.labworks.hotel.entity.Hotel;
@@ -24,6 +25,7 @@ public class TourService {
   private final TourMapper tourMapper;
   private final HotelRepository hotelRepository;
   private final GuideRepository guideRepository;
+  private final BookingRepository bookingRepository;
 
   public List<TourResponseDto> getAllTours() {
     return tourRepository.findAll().stream()
@@ -105,8 +107,8 @@ public class TourService {
 
   @Transactional
   public void deleteTour(Long id) {
-    if (!tourRepository.existsById(id)) {
-      throw new NoSuchElementException("Tour not found with id: " + id);
+    if (bookingRepository.existsByTourId(id)) {
+      throw new IllegalStateException("Cannot delete tour with existing bookings");
     }
     tourRepository.deleteById(id);
   }
