@@ -26,10 +26,10 @@ public class Guide {
   @Column(nullable = false)
   private String lastName;
 
-  @Column(unique = true)
+  @Column(unique = true, length = 15)
   private String phone;
 
-  @Column(unique = true)
+  @Column(nullable = false, unique = true, length = 320)
   private String email;
 
   private Integer experienceYears;

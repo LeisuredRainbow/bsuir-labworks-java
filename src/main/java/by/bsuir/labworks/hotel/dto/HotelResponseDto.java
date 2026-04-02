@@ -6,7 +6,6 @@ import lombok.Data;
 public class HotelResponseDto {
   private Long id;
   private String name;
-  private String city;
   private String address;
   private Integer stars;
 }

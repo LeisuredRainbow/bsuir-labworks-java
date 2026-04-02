@@ -27,10 +27,10 @@ public class Client {
   @Column(nullable = false)
   private String lastName;
 
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false, unique = true, length = 320)
   private String email;
 
-  @Column(unique = true)
+  @Column(unique = true, length = 15)
   private String phone;
 
   @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)

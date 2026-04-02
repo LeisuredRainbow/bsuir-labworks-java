@@ -7,6 +7,7 @@ import by.bsuir.labworks.booking.mapper.BookingMapper;
 import by.bsuir.labworks.booking.repository.BookingRepository;
 import by.bsuir.labworks.client.entity.Client;
 import by.bsuir.labworks.client.repository.ClientRepository;
+import by.bsuir.labworks.guide.repository.GuideRepository;
 import by.bsuir.labworks.tour.entity.Tour;
 import by.bsuir.labworks.tour.repository.TourRepository;
 import java.util.List;
@@ -22,38 +23,38 @@ public class BookingService {
   private final BookingMapper bookingMapper;
   private final ClientRepository clientRepository;
   private final TourRepository tourRepository;
+  private final GuideRepository guideRepository;
 
   public List<BookingResponseDto> getAllBookings() {
     return bookingRepository.findAll().stream()
-            .map(bookingMapper::toResponseDto)
-            .toList();
+                .map(bookingMapper::toResponseDto)
+                .toList();
   }
 
   public BookingResponseDto getBookingById(Long id) {
     Booking booking = bookingRepository.findById(id)
-            .orElseThrow(() -> new NoSuchElementException(
-                    "Booking not found with id: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Booking not found with id: " + id));
     return bookingMapper.toResponseDto(booking);
   }
 
   public List<BookingResponseDto> getBookingsByClientId(Long clientId) {
     return bookingRepository.findByClientId(clientId).stream()
-            .map(bookingMapper::toResponseDto)
-            .toList();
+                .map(bookingMapper::toResponseDto)
+                .toList();
   }
 
   public List<BookingResponseDto> getBookingsByTourId(Long tourId) {
     return bookingRepository.findByTourId(tourId).stream()
-            .map(bookingMapper::toResponseDto)
-            .toList();
+                .map(bookingMapper::toResponseDto)
+                .toList();
   }
 
-  //@Transactional
-  public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
+  @Transactional
+    public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
     if (!bookingDto.isValid()) {
       throw new IllegalArgumentException(
-    "Необходимо указать либо существующий clientId, "
-    + "либо данные нового клиента (firstName, lastName, email)");
+                    "Необходимо указать либо существующий clientId, "
+                    + "либо данные нового клиента (firstName, lastName, email)");
     }
 
     Client client;
@@ -66,10 +67,15 @@ public class BookingService {
         throw new IllegalArgumentException(
                         "Client with email " + bookingDto.getEmail() + " already exists");
       }
-      if (bookingDto.getPhone() != null
-          && clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException(
-                        "Client with phone " + bookingDto.getPhone() + " already exists");
+      if (bookingDto.getPhone() != null) {
+        if (clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+          throw new IllegalArgumentException(
+                            "Client with phone " + bookingDto.getPhone() + " already exists");
+        }
+        if (guideRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+          throw new IllegalArgumentException(
+                            "Phone " + bookingDto.getPhone() + " already used by a guide");
+        }
       }
       Client newClient = new Client();
       newClient.setFirstName(bookingDto.getFirstName());
@@ -80,8 +86,8 @@ public class BookingService {
     }
 
     Tour tour = tourRepository.findById(bookingDto.getTourId())
-            .orElseThrow(() -> new NoSuchElementException(
-                    "Tour not found with id: " + bookingDto.getTourId()));
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Tour not found with id: " + bookingDto.getTourId()));
 
     Booking booking = bookingMapper.toEntity(bookingDto);
     booking.setClient(client);
@@ -91,21 +97,21 @@ public class BookingService {
   }
 
   @Transactional
-    public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
+  public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
     Booking existingBooking = bookingRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Booking not found with id: " + id));
 
     if (bookingDto.getClientId() != null
-          && !bookingDto.getClientId().equals(existingBooking.getClient().getId())) {
+                && !bookingDto.getClientId().equals(existingBooking.getClient().getId())) {
       Client client = clientRepository.findById(bookingDto.getClientId())
-            .orElseThrow(() -> new NoSuchElementException(
-            "Client not found with id: " + bookingDto.getClientId()));
+                    .orElseThrow(() -> new NoSuchElementException(
+                            "Client not found with id: " + bookingDto.getClientId()));
       existingBooking.setClient(client);
     }
 
     if (bookingDto.getTourId() != null
-          && !bookingDto.getTourId().equals(existingBooking.getTour().getId())) {
+        && !bookingDto.getTourId().equals(existingBooking.getTour().getId())) {
       Tour tour = tourRepository.findById(bookingDto.getTourId())
           .orElseThrow(() -> new NoSuchElementException(
           "Tour not found with id: " + bookingDto.getTourId()));

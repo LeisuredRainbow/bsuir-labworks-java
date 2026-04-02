@@ -5,6 +5,7 @@ import by.bsuir.labworks.client.dto.ClientResponseDto;
 import by.bsuir.labworks.client.entity.Client;
 import by.bsuir.labworks.client.mapper.ClientMapper;
 import by.bsuir.labworks.client.repository.ClientRepository;
+import by.bsuir.labworks.guide.repository.GuideRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,12 @@ import org.springframework.stereotype.Service;
 public class ClientService {
   private final ClientRepository clientRepository;
   private final ClientMapper clientMapper;
+  private final GuideRepository guideRepository;
 
   public List<ClientResponseDto> getAllClients() {
     return clientRepository.findAll().stream()
-        .map(clientMapper::toResponseDto)
-        .toList();
+      .map(clientMapper::toResponseDto)
+      .toList();
   }
 
   public ClientResponseDto getClientById(Long id) {
@@ -35,10 +37,15 @@ public class ClientService {
   }
 
   public ClientResponseDto createClient(ClientRequestDto clientDto) {
-    if (clientDto.getPhone() != null
-        && clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-      throw new IllegalArgumentException("Client with phone "
-          + clientDto.getPhone() + " already exists");
+    if (clientDto.getPhone() != null) {
+      if (clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Client with phone "
+        + clientDto.getPhone() + " already exists");
+      }
+      if (guideRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Phone "
+        + clientDto.getPhone() + " already used by a guide");
+      }
     }
     Client client = clientMapper.toEntity(clientDto);
     client = clientRepository.save(client);
@@ -48,11 +55,15 @@ public class ClientService {
   public ClientResponseDto updateClient(Long id, ClientRequestDto clientDto) {
     Client existingClient = clientRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException("Client not found with id: " + id));
-    if (clientDto.getPhone() != null
-        && !clientDto.getPhone().equals(existingClient.getPhone())
-            && clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-      throw new IllegalArgumentException("Client with phone "
-      + clientDto.getPhone() + " already exists");
+    if (clientDto.getPhone() != null && !clientDto.getPhone().equals(existingClient.getPhone())) {
+      if (clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Client with phone "
+        + clientDto.getPhone() + " already exists");
+      }
+      if (guideRepository.findByPhone(clientDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Phone "
+        + clientDto.getPhone() + " already used by a guide");
+      }
     }
     
     existingClient.setFirstName(clientDto.getFirstName());

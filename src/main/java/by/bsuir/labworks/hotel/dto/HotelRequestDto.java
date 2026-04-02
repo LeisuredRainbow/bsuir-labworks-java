@@ -10,8 +10,6 @@ public class HotelRequestDto {
   @NotBlank(message = "Название отеля обязательно")
   private String name;
 
-  private String city;
-
   private String address;
 
   @Min(value = 1, message = "Количество звёзд должно быть от 1 до 5")

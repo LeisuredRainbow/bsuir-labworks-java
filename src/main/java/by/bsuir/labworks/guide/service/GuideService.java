@@ -1,5 +1,6 @@
 package by.bsuir.labworks.guide.service;
 
+import by.bsuir.labworks.client.repository.ClientRepository;
 import by.bsuir.labworks.guide.dto.GuideRequestDto;
 import by.bsuir.labworks.guide.dto.GuideResponseDto;
 import by.bsuir.labworks.guide.entity.Guide;
@@ -18,6 +19,7 @@ public class GuideService {
   private final GuideRepository guideRepository;
   private final GuideMapper guideMapper;
   private final TourRepository tourRepository;
+  private final ClientRepository clientRepository;
 
   public List<GuideResponseDto> getAllGuides() {
     return guideRepository.findAll().stream()
@@ -37,10 +39,15 @@ public class GuideService {
       throw new IllegalArgumentException("Guide with email "
           + guideDto.getEmail() + " already exists");
     }
-    if (guideDto.getPhone() != null
-        && guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-      throw new IllegalArgumentException("Guide with phone "
-          + guideDto.getPhone() + " already exists");
+    if (guideDto.getPhone() != null) {
+      if (guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Guide with phone "
+            + guideDto.getPhone() + " already exists");
+      }
+      if (clientRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Phone "
+            + guideDto.getPhone() + " already used by a client");
+      }
     }
     Guide guide = guideMapper.toEntity(guideDto);
     guide = guideRepository.save(guide);
@@ -51,17 +58,20 @@ public class GuideService {
     Guide existingGuide = guideRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException("Guide not found with id: " + id));
     if (guideDto.getEmail() != null && !guideDto.getEmail().equals(existingGuide.getEmail())
-          && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
+        && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
       throw new IllegalArgumentException("Guide with email "
-          + guideDto.getEmail() + " already exists");
+        + guideDto.getEmail() + " already exists");
     }
-    
-    if (guideDto.getPhone() != null && !guideDto.getPhone().equals(existingGuide.getPhone())
-          && guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-      throw new IllegalArgumentException("Guide with phone "
-          + guideDto.getPhone() + " already exists");
+    if (guideDto.getPhone() != null && !guideDto.getPhone().equals(existingGuide.getPhone())) {
+      if (guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Guide with phone "
+            + guideDto.getPhone() + " already exists");
+      }
+      if (clientRepository.findByPhone(guideDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException("Phone "
+            + guideDto.getPhone() + " already used by a client");
+      }
     }
-    
     existingGuide.setFirstName(guideDto.getFirstName());
     existingGuide.setLastName(guideDto.getLastName());
     existingGuide.setPhone(guideDto.getPhone());

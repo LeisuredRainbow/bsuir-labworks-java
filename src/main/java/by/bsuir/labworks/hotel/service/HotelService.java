@@ -30,20 +30,12 @@ public class HotelService {
     return hotelMapper.toResponseDto(hotel);
   }
 
-  public List<HotelResponseDto> getHotelsByCity(String city) {
-    return hotelRepository.findByCity(city).stream()
-        .map(hotelMapper::toResponseDto)
-        .toList();
-  }
-
   public HotelResponseDto createHotel(HotelRequestDto hotelDto) {
-    if (hotelDto.getCity() != null && hotelDto.getAddress()
-        != null && hotelRepository.findByCityAndAddress(hotelDto.getCity(),
-          hotelDto.getAddress()).isPresent()) {
-      throw new IllegalArgumentException("Hotel at address " + hotelDto.getAddress()
-                                         + " in city " + hotelDto.getCity() + " already exists");
+    if (hotelDto.getAddress() != null
+        && hotelRepository.findByAddress(hotelDto.getAddress()).isPresent()) {
+      throw new IllegalArgumentException("Hotel at address "
+            + hotelDto.getAddress() + " already exists");
     }
-    
     Hotel hotel = hotelMapper.toEntity(hotelDto);
     hotel = hotelRepository.save(hotel);
     return hotelMapper.toResponseDto(hotel);
@@ -51,21 +43,13 @@ public class HotelService {
 
   public HotelResponseDto updateHotel(Long id, HotelRequestDto hotelDto) {
     Hotel existingHotel = hotelRepository.findById(id)
-        .orElseThrow(()
-            -> new NoSuchElementException("Hotel not found with id: " + id));
-    if (hotelDto.getCity() != null && hotelDto.getAddress()
-          != null && (!hotelDto.getCity().equals(existingHotel.getCity())
-          || !hotelDto.getAddress().equals(existingHotel.getAddress()))
-              && hotelRepository.findByCityAndAddress(hotelDto.getCity(),
-                  hotelDto.getAddress()).isPresent()) {
-      throw new IllegalArgumentException("Hotel at address " + hotelDto.getAddress()
-                                             + " in city "
-                                                 + hotelDto.getCity() + " already exists");
+        .orElseThrow(() -> new NoSuchElementException("Hotel not found with id: " + id));
+    if (hotelDto.getAddress() != null && !hotelDto.getAddress().equals(existingHotel.getAddress())
+        && hotelRepository.findByAddress(hotelDto.getAddress()).isPresent()) {
+      throw new IllegalArgumentException("Hotel at address "
+            + hotelDto.getAddress() + " already exists");
     }
-      
-    
     existingHotel.setName(hotelDto.getName());
-    existingHotel.setCity(hotelDto.getCity());
     existingHotel.setAddress(hotelDto.getAddress());
     existingHotel.setStars(hotelDto.getStars());
     existingHotel = hotelRepository.save(existingHotel);

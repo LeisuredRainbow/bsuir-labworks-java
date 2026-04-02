@@ -15,7 +15,7 @@ import lombok.Data;
 
 @Entity
 @Table(name = "hotels",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"city", "address"}))
+       uniqueConstraints = @UniqueConstraint(columnNames = {"address"}))
 @Data
 public class Hotel {
   @Id
@@ -24,8 +24,6 @@ public class Hotel {
 
   @Column(nullable = false)
   private String name;
-
-  private String city;
 
   private String address;
 

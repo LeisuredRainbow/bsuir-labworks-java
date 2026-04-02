@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,11 +33,6 @@ public class HotelController {
     return hotelService.getHotelById(id);
   }
 
-  @GetMapping("/by-city")
-  public List<HotelResponseDto> getHotelsByCity(@RequestParam String city) {
-    return hotelService.getHotelsByCity(city);
-  }
-
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public HotelResponseDto createHotel(@RequestBody @Valid HotelRequestDto hotelDto) {
@@ -47,7 +41,7 @@ public class HotelController {
 
   @PutMapping("/{id}")
   public HotelResponseDto updateHotel(@PathVariable Long id,
-                                      @RequestBody @Valid HotelRequestDto hotelDto) {
+      @RequestBody @Valid HotelRequestDto hotelDto) {
     return hotelService.updateHotel(id, hotelDto);
   }
 

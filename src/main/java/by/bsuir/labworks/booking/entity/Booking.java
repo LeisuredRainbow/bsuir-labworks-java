@@ -35,7 +35,7 @@ public class Booking {
   private LocalDate bookingDate;
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "ENUM('CONFIRMED','PENDING','CANCELLED')")
   private BookingStatus status;
 
   public enum BookingStatus {
