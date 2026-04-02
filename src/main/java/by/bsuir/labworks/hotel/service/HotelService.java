@@ -30,6 +30,12 @@ public class HotelService {
     return hotelMapper.toResponseDto(hotel);
   }
 
+  public HotelResponseDto getHotelByAddress(String address) {
+    Hotel hotel = hotelRepository.findByAddress(address)
+        .orElseThrow(() -> new NoSuchElementException("Hotel not found with address: " + address));
+    return hotelMapper.toResponseDto(hotel);
+  }
+
   public HotelResponseDto createHotel(HotelRequestDto hotelDto) {
     if (hotelDto.getAddress() != null
         && hotelRepository.findByAddress(hotelDto.getAddress()).isPresent()) {

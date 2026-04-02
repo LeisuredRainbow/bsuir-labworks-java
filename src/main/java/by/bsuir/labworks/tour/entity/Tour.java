@@ -41,6 +41,7 @@ public class Tour {
   @Column(name = "hot")
   private Boolean hot;
 
+  @Column(length = 1000)
   private String description;
 
   @ManyToMany
