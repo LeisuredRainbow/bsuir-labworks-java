@@ -107,6 +107,9 @@ public class TourService {
 
   @Transactional
   public void deleteTour(Long id) {
+    if (!tourRepository.existsById(id)) {
+      throw new NoSuchElementException("Tour not found with id: " + id);
+    }
     if (bookingRepository.existsByTourId(id)) {
       throw new IllegalStateException("Cannot delete tour with existing bookings");
     }
