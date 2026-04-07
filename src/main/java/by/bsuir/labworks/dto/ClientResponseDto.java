@@ -1,0 +1,12 @@
+package by.bsuir.labworks.dto;
+
+import lombok.Data;
+
+@Data
+public class ClientResponseDto {
+  private Long id;
+  private String firstName;
+  private String lastName;
+  private String email;
+  private String phone;
+}
