@@ -19,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class BookingService {
+
+  private static final String BOOKING_NOT_FOUND_MSG = "Booking not found with id: ";
+
   private final BookingRepository bookingRepository;
   private final BookingMapper bookingMapper;
   private final ClientRepository clientRepository;
@@ -27,30 +30,30 @@ public class BookingService {
 
   public List<BookingResponseDto> getAllBookings() {
     return bookingRepository.findAll().stream()
-                .map(bookingMapper::toResponseDto)
-                .toList();
+        .map(bookingMapper::toResponseDto)
+        .toList();
   }
 
   public BookingResponseDto getBookingById(Long id) {
     Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Booking not found with id: " + id));
+        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
     return bookingMapper.toResponseDto(booking);
   }
 
   public List<BookingResponseDto> getBookingsByClientId(Long clientId) {
     return bookingRepository.findByClientId(clientId).stream()
-                .map(bookingMapper::toResponseDto)
-                .toList();
+        .map(bookingMapper::toResponseDto)
+        .toList();
   }
 
   public List<BookingResponseDto> getBookingsByTourId(Long tourId) {
     return bookingRepository.findByTourId(tourId).stream()
-                .map(bookingMapper::toResponseDto)
-                .toList();
+        .map(bookingMapper::toResponseDto)
+        .toList();
   }
 
   @Transactional
-    public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
+  public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
     if (!bookingDto.isValid()) {
       throw new IllegalArgumentException(
                     "Необходимо указать либо существующий clientId, "
@@ -99,8 +102,7 @@ public class BookingService {
   @Transactional
   public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
     Booking existingBooking = bookingRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Booking not found with id: " + id));
+                .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
 
     if (bookingDto.getClientId() != null
                 && !bookingDto.getClientId().equals(existingBooking.getClient().getId())) {
@@ -126,9 +128,8 @@ public class BookingService {
 
   @Transactional
   public void deleteBooking(Long id) {
-    if (!bookingRepository.existsById(id)) {
-      throw new NoSuchElementException("Booking not found with id: " + id);
-    }
-    bookingRepository.deleteById(id);
+    Booking booking = bookingRepository.findById(id)
+        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
+    bookingRepository.delete(booking);
   }
 }

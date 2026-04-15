@@ -16,6 +16,9 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class GuideService {
+
+  private static final String GUIDE_NOT_FOUND_MSG = "Guide not found with id: ";
+
   private final GuideRepository guideRepository;
   private final GuideMapper guideMapper;
   private final TourRepository tourRepository;
@@ -29,7 +32,7 @@ public class GuideService {
 
   public GuideResponseDto getGuideById(Long id) {
     Guide guide = guideRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Guide not found with id: " + id));
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
     return guideMapper.toResponseDto(guide);
   }
 
@@ -56,7 +59,7 @@ public class GuideService {
 
   public GuideResponseDto updateGuide(Long id, GuideRequestDto guideDto) {
     Guide existingGuide = guideRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Guide not found with id: " + id));
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
     if (guideDto.getEmail() != null && !guideDto.getEmail().equals(existingGuide.getEmail())
         && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
       throw new IllegalArgumentException("Guide with email "
@@ -83,10 +86,9 @@ public class GuideService {
 
   @Transactional
   public void deleteGuide(Long id) {
-    if (!guideRepository.existsById(id)) {
-      throw new NoSuchElementException("Guide not found with id: " + id);
-    }
+    Guide guide = guideRepository.findById(id)
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
     tourRepository.removeGuideFromAllTours(id);
-    guideRepository.deleteById(id);
+    guideRepository.delete(guide);
   }
 }
