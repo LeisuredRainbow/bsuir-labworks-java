@@ -7,9 +7,6 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,19 +70,5 @@ public class TourController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteTour(@PathVariable Long id) {
     tourService.deleteTour(id);
-  }
-
-  @GetMapping("/search/by-hotel/jpql")
-  public Page<TourResponseDto> searchToursByHotelNameJpql(
-      @RequestParam String hotelName,
-      @PageableDefault(size = 10) Pageable pageable) {
-    return tourService.searchToursByHotelNameJpql(hotelName, pageable);
-  }
-
-  @GetMapping("/search/by-hotel/native")
-  public Page<TourResponseDto> searchToursByHotelNameNative(
-      @RequestParam String hotelName,
-      @PageableDefault(size = 10) Pageable pageable) {
-    return tourService.searchToursByHotelNameNative(hotelName, pageable);
   }
 }

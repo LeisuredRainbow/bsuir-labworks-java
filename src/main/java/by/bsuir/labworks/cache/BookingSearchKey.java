@@ -2,21 +2,21 @@ package by.bsuir.labworks.cache;
 
 import java.util.Objects;
 
-public class TourSearchKey {
-  private final String hotelName;
+public class BookingSearchKey {
+  private final String lastName;
   private final int page;
   private final int size;
   private final String sort;
 
-  public TourSearchKey(String hotelName, int page, int size, String sort) {
-    this.hotelName = hotelName;
+  public BookingSearchKey(String lastName, int page, int size, String sort) {
+    this.lastName = lastName;
     this.page = page;
     this.size = size;
     this.sort = sort;
   }
 
-  public String getHotelName() {
-    return hotelName;
+  public String getLastName() {
+    return lastName;
   }
 
   public int getPage() {
@@ -39,15 +39,15 @@ public class TourSearchKey {
     if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    TourSearchKey that = (TourSearchKey) obj;
+    BookingSearchKey that = (BookingSearchKey) obj;
     return page == that.page
         && size == that.size
-        && Objects.equals(hotelName, that.hotelName)
+        && Objects.equals(lastName, that.lastName)
         && Objects.equals(sort, that.sort);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(hotelName, page, size, sort);
+    return Objects.hash(lastName, page, size, sort);
   }
 }

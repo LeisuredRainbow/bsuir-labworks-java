@@ -56,6 +56,7 @@ public class ClientService {
     return clientMapper.toResponseDto(client);
   }
 
+  @Transactional
   public ClientResponseDto updateClient(Long id, ClientRequestDto clientDto) {
     Client existingClient = clientRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + id));
