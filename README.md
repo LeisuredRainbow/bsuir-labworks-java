@@ -1,4 +1,4 @@
-# Лабораторная работа №2: JPA (Hibernate/Spring Data) – Туристическое агентство
+# Лабораторная работа №3: Data Caching – Туристическое агентство
 
 **Тема:** Туристическое агентство  
 **Выполнил:** Студент группы [450504] [Толкач Доминик Геннадьевич]  
@@ -6,46 +6,42 @@
 
 ## Описание проекта
 
-Данный проект является продолжением лабораторной работы №1. Реализована полноценная модель данных для туристического агентства с использованием **PostgreSQL** и **JPA/Hibernate**. В проекте настроены связи между сущностями, продемонстрированы проблемы N+1 и транзакционности, а также реализованы CRUD-операции для всех сущностей.
+Данный проект расширяет лабораторные работы №1 и №2 добавлением **кэширования данных** с использованием in‑memory индекса на основе `HashMap`. Реализованы сложные поисковые запросы с фильтрацией по вложенной сущности (`Client`), пагинацией и сортировкой. Продемонстрирована работа кэша, его инвалидация при изменении данных, а также устранение проблемы N+1 для JPQL и native‑запросов.
 
-Проект построен на **Spring Boot 4.0.3**, **Java 17**, **PostgreSQL**, **MapStruct**, **Lombok**. Код соответствует **Google Java Style** (Checkstyle) и проходит статический анализ **SonarCloud** (0 нарушений).
+Проект построен на **Spring Boot 4.0.5**, **Java 17**, **PostgreSQL**, **MapStruct**, **Lombok**. Код соответствует **Google Java Style** (Checkstyle) и проходит статический анализ **SonarCloud** (0 нарушений).
 
-## Основные возможности
+## Основные возможности (новое в лабораторной работе №3)
 
-### Модель данных (5 сущностей)
-- `Client` – клиент (ФИО, email, телефон)
-- `Tour` – тур (название, страна, цена, длительность, описание, горящий тур)
-- `Hotel` – отель (название, город, адрес, звёздность)
-- `Guide` – гид (имя, фамилия, телефон, email, стаж)
-- `Booking` – бронирование (связь клиента и тура, дата, статус)
+### 1. Сложные GET-запросы с фильтрацией по вложенной сущности
+- Поиск бронирований **по фамилии клиента** (`lastName`).
+- **JPQL-запрос** с `JOIN FETCH` для предотвращения проблемы N+1.
+- **Native SQL-запрос** с проекцией в `BookingNativeProjection`, также оптимизированный (один запрос без ленивых подгрузок).
+- **Пагинация и сортировка** через `Pageable` (параметры `page`, `size`, `sort`).
 
-### Связи между сущностями
-- `@OneToMany` / `@ManyToOne` между `Client` и `Booking` (один клиент → много бронирований)
-- `@OneToMany` / `@ManyToOne` между `Tour` и `Booking` (один тур → много бронирований)
-- `@ManyToMany` между `Tour` и `Hotel` (многие ко многим, через таблицу `tour_hotel`)
-- `@ManyToMany` между `Tour` и `Guide` (многие ко многим, через таблицу `tour_guide`)
+### 2. In‑memory кэш (индекс)
+- Компонент `BookingSearchCache` хранит результаты поиска в `HashMap`.
+- **Составной ключ** `BookingSearchKey` включает:
+  - `lastName` (фамилия клиента)
+  - `page` (номер страницы)
+  - `size` (размер страницы)
+  - `sort` (строка сортировки)
+- Корректно переопределены `equals()` и `hashCode()` для работы с `HashMap`.
+- Потокобезопасность обеспечена блоками `synchronized`.
 
-### CRUD операции
-Для каждой сущности реализованы REST-контроллеры с полным набором операций (GET, POST, PUT, DELETE) с использованием DTO (Request/Response) и мапперов MapStruct.
+### 3. Инвалидация кэша
+- Кэш полностью очищается при любом изменении данных, влияющих на результаты поиска:
+  - создание, обновление, удаление бронирования
+  - (опционально) обновление/удаление клиента
+- Вызов `invalidateAll()` гарантирует актуальность данных.
 
-### Демонстрация проблем и их решений
-
-#### 1. Проблема N+1 и её решение
-- **N+1:** эндпоинт `GET /api/tours/country?country=...` загружает туры, а затем при маппинге догружает отели и гидов отдельными запросами (множество SQL).
-- **Решение:** эндпоинты `GET /api/tours/price/max?maxPrice=...` и `GET /api/tours/price?price=...` используют `@EntityGraph`, загружая все связанные данные одним запросом.
-
-#### 2. Транзакционность
-Метод `createBooking` в `BookingService` умеет создавать бронирование либо для существующего клиента (`clientId`), либо для нового клиента (передавая `firstName`, `lastName`, `email`, `phone`).  
-- **Без `@Transactional`** (аннотация закомментирована): при ошибке (например, неверный `tourId`) новый клиент сохраняется, а бронь – нет (частичное сохранение).  
-- **С `@Transactional`**: при ошибке ни клиент, ни бронь не сохраняются (полный откат).
-
-#### 3. Фильтрация по цене
-- `GET /api/tours/price/min?minPrice=1000` – фильтрация по минимальной цене (проблема N+1).
-- `GET /api/tours/price/max?maxPrice=1500` – фильтрация по максимальной цене (решение N+1 с `@EntityGraph`).
+### 4. Устранение проблемы N+1
+- **JPQL-запрос** использует `JOIN FETCH` для загрузки клиента и тура в одном запросе.
+- **Native-запрос** возвращает проекцию `BookingNativeProjection`, содержащую все необходимые поля, что исключает дополнительные запросы за связями.
+- Для всех GET-эндпоинтов туров (`/api/tours`) добавлены `@EntityGraph`, устраняющие N+1 при загрузке отелей и гидов.
 
 ## Технологии
 - Java 17
-- Spring Boot 4.0.4
+- Spring Boot 4.0.5
 - Spring Web, Spring Data JPA
 - PostgreSQL
 - Lombok
@@ -54,33 +50,41 @@
 - Maven
 - Checkstyle (Google Java Style)
 
-## Структура проекта
+## Структура проекта (новые/изменённые файлы)
 
 src/main/java/by/bsuir/labworks/
 
-├── booking/
+├── cache/
 
-│ ├── controller/ # BookingController
+│ ├── BookingSearchKey.java # составной ключ кэша
 
-│ ├── dto/ # BookingRequestDto, BookingResponseDto
+│ └── BookingSearchCache.java # in‑memory кэш на HashMap
 
-│ ├── entity/ # Booking
+├── config/
 
-│ ├── mapper/ # BookingMapper
+│ └── WebConfig.java # настройка сериализации Page
 
-│ ├── repository/ # BookingRepository
+├── projection/
 
-│ └── service/ # BookingService
+│ └── BookingNativeProjection.java # проекция для 
 
-├── client/ # аналогичная структура
+native-запроса
 
-├── tour/ # аналогичная структура
+├── controllers/
 
-├── hotel/ # аналогичная структура
+│ └── BookingController.java # добавлены эндпоинты поиска
 
-├── guide/ # аналогичная структура
+├── service/
 
-└── LabworksApplication.java
+│ ├── BookingService.java # логика кэширования и инвалидации
+
+├── repository/
+
+│ ├── BookingRepository.java # JPQL и native методы с пагинацией
+
+│ └── TourRepository.java # добавлены @EntityGraph
+
+└── (остальные файлы без изменений)
 
 ## Запуск
 
@@ -90,7 +94,7 @@ src/main/java/by/bsuir/labworks/
 - Maven
 
 ### Настройка базы данных
-1. Создайте базу данных `travel_agency` и пользователя `travel_user` с паролем (например, `travel_pass`).
+1. Создайте базу данных `travel_agency` и пользователя `travel_user` с паролем.
 2. Настройте переменные окружения (или укажите их в `application.properties`):
    ```bash
    export DB_USERNAME=travel_user
@@ -98,133 +102,54 @@ src/main/java/by/bsuir/labworks/
 3. Убедитесь, что PostgreSQL запущен: sudo systemctl start postgresql
 
 ### Запуск приложения
-./mvnw spring-boot:run
 
-### Примеры запросов
+  ```bash
+  ./mvnw spring-boot:run
 
-### Клиенты (/api/clients)
+### Примеры запросов (новые эндпоинты)
 
-### Создать клиента
-POST http://localhost:8080/api/clients
-Content-Type: application/json
+### Поиск бронирований по фамилии клиента (JPQL)
 
-{
-  "firstName": "Иван",
-  "lastName": "Петров",
-  "email": "ivan@mail.com",
-  "phone": "+375(29)123-45-67"
-}
+  GET /api/bookings/search/by-client-last-name/jpql?lastName=Вейдер&page=0&size=5&sort=bookingDate,desc
 
-### Получить всех клиентов
-GET http://localhost:8080/api/clients
+  Ответ:
 
-### Туры (/api/tours)
-### Создать тур с отелями и гидами
-POST http://localhost:8080/api/tours
-Content-Type: application/json
+  ```bash
+  {
+    "content": [ ... ],
+    "pageable": { ... },
+    "totalElements": 42,
+    "totalPages": 9,
+    "last": false,
+    "first": true,
+    ...
+  }
 
-{
-  "name": "Отдых в Италии",
-  "country": "Италия",
-  "durationDays": 7,
-  "price": 1500.00,
-  "hot": true,
-  "description": "Рим, Флоренция, Венеция",
-  "hotelIds": [1,2],
-  "guideIds": [1]
-}
+### Поиск бронирований по фамилии клиента (Native)
 
-### Фильтрация по стране (проблема N+1)
-GET http://localhost:8080/api/tours/country?country=Япония
+  GET /api/bookings/search/by-client-last-name/native?lastName=Вейдер&page=0&size=5
 
-### Фильтрация по минимальной цене (проблема N+1)
-GET http://localhost:8080/api/tours/price/min?minPrice=1000
+### Демонстрация кэширования и инвалидации
 
-### Фильтрация по максимальной цене (решение N+1)
-GET http://localhost:8080/api/tours/price/max?maxPrice=2000
+    Первый вызов поиска → в логах видны SQL-запросы.
 
-### Поиск по точной цене (решение N+1)
-GET http://localhost:8080/api/tours/price?price=1500
+    Повторный вызов с теми же параметрами → SQL-запросов нет (данные из кэша).
 
-### Отели (/api/hotels)
-### Создать отель
-POST http://localhost:8080/api/hotels
-Content-Type: application/json
+    Обновление бронирования (например, PUT /api/bookings/{id}) → кэш очищается.
 
-{
-  "name": "Grand Hotel Roma",
-  "city": "Рим",
-  "address": "Via del Corso, 1",
-  "stars": 5
-}
-
-### Гиды (/api/guides)
-### Создать гида
-POST http://localhost:8080/api/guides
-Content-Type: application/json
-
-{
-  "firstName": "Мария",
-  "lastName": "Росси",
-  "phone": "+39012345678",
-  "email": "maria@guide.it",
-  "experienceYears": 10
-}
-
-### Бронирования (/api/bookings)
-### Создать бронирование для существующего клиента
-POST http://localhost:8080/api/bookings
-Content-Type: application/json
-
-{
-  "clientId": 1,
-  "tourId": 1,
-  "bookingDate": "2026-08-15",
-  "status": "CONFIRMED"
-}
-
-### Создать бронирование с новым клиентом (одна транзакция)
-POST http://localhost:8080/api/bookings
-Content-Type: application/json
-
-{
-  "firstName": "Люк",
-  "lastName": "Скайуокер",
-  "email": "luke@jedi.com",
-  "phone": "+375(33)777-77-77",
-  "tourId": 5,
-  "bookingDate": "2026-09-01",
-  "status": "PENDING"
-}
-
-### Получить все бронирования
-GET http://localhost:8080/api/bookings
-
-### Валидация уникальности
-- Для клиента: email и номер телефона должны быть уникальны.
-- Для гида: email и номер телефона должны быть уникальны.
-- Для отеля: комбинация города и адреса должна быть уникальна (один адрес в городе не может быть повторён).
-
-При попытке создать дублирующую запись API возвращает статус `400 Bad Request` с пояснением.
-
-### Демонстрация транзакций
-Чтобы показать частичное сохранение (без @Transactional):
-
-1. В BookingService.createBooking закомментируйте аннотацию @Transactional.
-
-2. Отправьте запрос на создание брони с новым клиентом и несуществующим tourId (например, 9999).
-
-3. Проверьте БД: клиент сохранился, бронь – нет.
-
-Для демонстрации полного отката верните аннотацию и повторите запрос – ни клиент, ни бронь не сохранятся.
+    Снова поиск → SQL-запросы снова появляются (кэш пуст, данные загружены из БД).
 
 ### Проверка стиля кода
-./mvnw checkstyle:check
 
-### После исправления всех замечаний должно быть 0 ошибок.
+  ```bash
+  ./mvnw checkstyle:check
+
+После исправления всех замечаний должно быть 0 ошибок.
 
 ### Статический анализ
-``https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main```
-### SonarCloud – 0 нарушений.
+
+SonarCloud – 0 нарушений (https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main)
+
 ### Автор
+
 Студент группы [450504] [Толкач Доминик Геннадьевич]
