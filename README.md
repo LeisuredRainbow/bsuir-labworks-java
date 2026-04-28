@@ -1,154 +1,228 @@
-# Лабораторная работа №3: Data Caching – Туристическое агентство
+# Лабораторная работа №4: Error Logging/Handling – Туристическое агентство
 
 **Тема:** Туристическое агентство  
 **Выполнил:** Студент группы [450504] [Толкач Доминик Геннадьевич]  
 **GitHub:** [https://github.com/LeisuredRainbow/bsuir-labworks-java](https://github.com/LeisuredRainbow/bsuir-labworks-java)
 
-## Описание проекта
+## Описание
 
-Данный проект расширяет лабораторные работы №1 и №2 добавлением **кэширования данных** с использованием in‑memory индекса на основе `HashMap`. Реализованы сложные поисковые запросы с фильтрацией по вложенной сущности (`Client`), пагинацией и сортировкой. Продемонстрирована работа кэша, его инвалидация при изменении данных, а также устранение проблемы N+1 для JPQL и native‑запросов.
+Данная лабораторная работа расширяет функциональность предыдущих работ добавлением **глобальной обработки ошибок**, **валидации входных данных**, **логирования с ротацией**, **AOP для логирования времени выполнения сервисных методов** и **документации API через Swagger/OpenAPI**.
 
-Проект построен на **Spring Boot 4.0.5**, **Java 17**, **PostgreSQL**, **MapStruct**, **Lombok**. Код соответствует **Google Java Style** (Checkstyle) и проходит статический анализ **SonarCloud** (0 нарушений).
+Все сообщения об ошибках и логи переведены на **английский язык**.
 
-## Основные возможности (новое в лабораторной работе №3)
+---
 
-### 1. Сложные GET-запросы с фильтрацией по вложенной сущности
-- Поиск бронирований **по фамилии клиента** (`lastName`).
-- **JPQL-запрос** с `JOIN FETCH` для предотвращения проблемы N+1.
-- **Native SQL-запрос** с проекцией в `BookingNativeProjection`, также оптимизированный (один запрос без ленивых подгрузок).
-- **Пагинация и сортировка** через `Pageable` (параметры `page`, `size`, `sort`).
+## Реализованные возможности
 
-### 2. In‑memory кэш (индекс)
-- Компонент `BookingSearchCache` хранит результаты поиска в `HashMap`.
-- **Составной ключ** `BookingSearchKey` включает:
-  - `lastName` (фамилия клиента)
-  - `page` (номер страницы)
-  - `size` (размер страницы)
-  - `sort` (строка сортировки)
-- Корректно переопределены `equals()` и `hashCode()` для работы с `HashMap`.
-- Потокобезопасность обеспечена блоками `synchronized`.
+### 1. Глобальная обработка ошибок (GlobalExceptionHandler)
+- Перехватывает и обрабатывает:
+  - `NoSuchElementException`, `EmptyResultDataAccessException` → **404 Not Found**
+  - `IllegalArgumentException`, `IllegalStateException` → **400 Bad Request**
+  - `MethodArgumentNotValidException`, `BindException`, `ConstraintViolationException` → **400 Bad Request** с деталями валидации
+  - `DataIntegrityViolationException` → **409 Conflict**
+  - `MethodArgumentTypeMismatchException` → **400 Bad Request**
+  - `HttpMessageNotReadableException` (некорректный JSON) → **400 Bad Request**
+  - `Exception` → **500 Internal Server Error** (страховка)
+- Единый формат ответа: `ErrorResponseDto` (timestamp, status, error, message, path, validationErrors)
 
-### 3. Инвалидация кэша
-- Кэш полностью очищается при любом изменении данных, влияющих на результаты поиска:
-  - создание, обновление, удаление бронирования
-  - (опционально) обновление/удаление клиента
-- Вызов `invalidateAll()` гарантирует актуальность данных.
+### 2. Валидация входных данных
+- Используются аннотации Jakarta Validation (`@NotNull`, `@NotBlank`, `@Email`, `@Positive`, `@Future`, `@Size`, `@Min`, `@Max`).
+- В контроллерах – `@Valid` для `@RequestBody` и `@Validated` для параметров `@RequestParam`/`@PathVariable`.
 
-### 4. Устранение проблемы N+1
-- **JPQL-запрос** использует `JOIN FETCH` для загрузки клиента и тура в одном запросе.
-- **Native-запрос** возвращает проекцию `BookingNativeProjection`, содержащую все необходимые поля, что исключает дополнительные запросы за связями.
-- Для всех GET-эндпоинтов туров (`/api/tours`) добавлены `@EntityGraph`, устраняющие N+1 при загрузке отелей и гидов.
+### 3. Логирование (Logback)
+- Конфигурация: `logback-spring.xml`
+- Вывод в консоль и в файл `logs/travel-agency.log`
+- **Ротация**: по размеру (10 KB), архивация `.gz`, история 30 дней, максимальный размер всех архивов 1 GB.
+- Уровни:
+  - `by.bsuir.labworks` – `DEBUG`
+  - `org.hibernate.SQL` – `INFO`
+  - `org.hibernate.orm.jdbc.bind` – `WARN`
+  - `root` – `INFO`
+
+### 4. AOP (логирование времени выполнения сервисных методов)
+- Аспект `ServiceExecutionTimeLoggingAspect`
+- Применяется ко всем методам пакета `by.bsuir.labworks.service..*`
+- Логирует время выполнения в milliseconds (формат `X.XXX ms`)
+
+### 5. Документация API (Swagger/OpenAPI)
+- Конфигурация: `OpenApiConfig` (заголовок, версия, описание)
+- Контроллеры аннотированы `@Tag`, методы – `@Operation`, параметры – `@Parameter`
+- DTO содержат `@Schema` с примерами и описаниями
+- Доступно по адресу: `http://localhost:8080/swagger-ui.html`
+
+### 6. Строгий JSON
+- В `application.properties` включено `spring.jackson.deserialization.fail-on-unknown-properties=true`
+- Любое неизвестное поле в JSON вызывает **400 Bad Request**
+
+---
 
 ## Технологии
-- Java 17
-- Spring Boot 4.0.5
-- Spring Web, Spring Data JPA
+- Java 21 (совместима с Java 17)
+- Spring Boot 4.0.6
+- Spring Web, Spring Data JPA, Spring AOP
 - PostgreSQL
-- Lombok
-- MapStruct
+- Lombok, MapStruct
 - Jakarta Bean Validation
+- Logback (ротация)
+- Swagger/OpenAPI (springdoc-openapi-starter-webmvc-ui)
 - Maven
 - Checkstyle (Google Java Style)
+- SonarCloud (0 нарушений)
 
-## Структура проекта (новые/изменённые файлы)
-
-src/main/java/by/bsuir/labworks/
-
-├── cache/
-
-│ ├── BookingSearchKey.java # составной ключ кэша
-
-│ └── BookingSearchCache.java # in‑memory кэш на HashMap
-
-├── config/
-
-│ └── WebConfig.java # настройка сериализации Page
-
-├── projection/
-
-│ └── BookingNativeProjection.java # проекция для 
-
-native-запроса
-
-├── controllers/
-
-│ └── BookingController.java # добавлены эндпоинты поиска
-
-├── service/
-
-│ ├── BookingService.java # логика кэширования и инвалидации
-
-├── repository/
-
-│ ├── BookingRepository.java # JPQL и native методы с пагинацией
-
-│ └── TourRepository.java # добавлены @EntityGraph
-
-└── (остальные файлы без изменений)
+---
 
 ## Запуск
 
 ### Требования
 - PostgreSQL (установлен и запущен)
-- JDK 17+
+- JDK 21+
 - Maven
 
 ### Настройка базы данных
-1. Создайте базу данных `travel_agency` и пользователя `travel_user` с паролем.
-2. Настройте переменные окружения (или укажите их в `application.properties`):
+1. Создайте базу `travel_agency` и пользователя `travel_user` с паролем.
+2. Установите переменные окружения:
    ```bash
    export DB_USERNAME=travel_user
    export DB_PASSWORD=travel_pass
-3. Убедитесь, что PostgreSQL запущен: sudo systemctl start postgresql
+3. Убедитесь, что PostgreSQL запущен.
 
 ### Запуск приложения
 
-  ```bash
-  ./mvnw spring-boot:run
+'''bash
+./mvnw spring-boot:run
 
-### Примеры запросов (новые эндпоинты)
+После запуска:
 
-### Поиск бронирований по фамилии клиента (JPQL)
+Swagger UI: http://localhost:8080/swagger-ui.html
 
-  GET /api/bookings/search/by-client-last-name/jpql?lastName=Вейдер&page=0&size=5&sort=bookingDate,desc
+Логи пишутся в logs/travel-agency.log
 
-  Ответ:
+### Примеры запросов для демонстрации
 
-  ```bash
-  {
-    "content": [ ... ],
-    "pageable": { ... },
-    "totalElements": 42,
-    "totalPages": 9,
-    "last": false,
-    "first": true,
-    ...
-  }
+1. 400 Bad Request (неверный тип параметра)
+'''bash
+curl -X GET "http://localhost:8080/api/hotels/abc"
+Ответ: 400, Invalid value for parameter 'id': abc
 
-### Поиск бронирований по фамилии клиента (Native)
+2. 400 Bad Request (пустое имя клиента)
+'''bash
+curl -X POST http://localhost:8080/api/clients \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"","lastName":"Ivanov","email":"test@mail.com"}'
+Ответ: 400, validationErrors содержит firstName: First name is required
 
-  GET /api/bookings/search/by-client-last-name/native?lastName=Вейдер&page=0&size=5
+3. 404 Not Found (несуществующий отель)
+'''bash
+curl -X GET http://localhost:8080/api/hotels/9999
+Ответ: 404, Hotel not found with id: 9999
 
-### Демонстрация кэширования и инвалидации
+4. 409 Conflict (дубликат email клиента)
+'''bash
+# Сначала создать клиента
+curl -X POST http://localhost:8080/api/clients \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"John","lastName":"Doe","email":"conflict@test.com"}'
+# Повторить тот же email
+curl -X POST http://localhost:8080/api/clients \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Jane","lastName":"Roe","email":"conflict@test.com"}'
+Ответ: 409, нарушение уникальности
 
-    Первый вызов поиска → в логах видны SQL-запросы.
+5. 400 Bad Request (некорректный JSON – лишняя запятая)
+'''bash
+curl -X POST http://localhost:8080/api/hotels \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","address":"Address","stars":5,}'
+Ответ: 400, Malformed JSON request. Please check your request body syntax.
 
-    Повторный вызов с теми же параметрами → SQL-запросов нет (данные из кэша).
+6. Демонстрация AOP (логирование времени)
+'''bash
+curl "http://localhost:8080/api/bookings/search/by-client-last-name/jpql?lastName=Vader&page=0&size=5"
+В консоли/файле лога появится строка:
+BookingService.searchBookingsByClientLastNameJpql(..) executed in 12.345 ms
 
-    Обновление бронирования (например, PUT /api/bookings/{id}) → кэш очищается.
+7. Swagger UI
+Откройте в браузере: http://localhost:8080/swagger-ui.html
 
-    Снова поиск → SQL-запросы снова появляются (кэш пуст, данные загружены из БД).
+### Сборка и проверка качества
+Checkstyle
+'''bash
+./mvnw checkstyle:check
 
-### Проверка стиля кода
+Должно быть 0 ошибок.
 
-  ```bash
-  ./mvnw checkstyle:check
+### Компиляция и тесты
 
-После исправления всех замечаний должно быть 0 ошибок.
+'''bash
+./mvnw clean compile
+./mvnw test
 
-### Статический анализ
+### Статический анализ (SonarCloud)
 
-SonarCloud – 0 нарушений (https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main)
+https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main
+– 0 нарушений по всем метрикам.
+
+### Структура проекта (новые/изменённые файлы для лабораторной №4)
+
+src/main/java/by/bsuir/labworks/
+
+├── exception/
+
+│   ├── ErrorResponseDto.java
+
+│   └── GlobalExceptionHandler.java
+
+├── aspect/
+
+│   └── ServiceExecutionTimeLoggingAspect.java
+
+├── config/
+
+│   └── OpenApiConfig.java
+
+├── controllers/
+
+│   ├── BookingController.java
+
+│   ├── ClientController.java
+
+│   ├── GuideController.java
+
+│   ├── HotelController.java
+
+│   └── TourController.java
+
+├── dto/
+
+│   ├── BookingRequestDto.java
+
+│   ├── ClientRequestDto.java
+
+│   ├── GuideRequestDto.java
+
+│   ├── HotelRequestDto.java
+
+│   ├── TourRequestDto.java
+
+│   └── ... (остальные DTO)
+
+├── service/
+
+│   ├── BookingService.java
+
+│   ├── ClientService.java
+
+│   ├── GuideService.java
+
+│   ├── HotelService.java
+
+│   └── TourService.java
+
+└── resources/
+
+    ├── logback-spring.xml
+
+    └── application.properties
 
 ### Автор
 

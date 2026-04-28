@@ -16,6 +16,8 @@ import by.bsuir.labworks.repository.TourRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BookingService {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BookingService.class);
   private static final String BOOKING_NOT_FOUND_MSG = "Booking not found with id: ";
 
   private final BookingRepository bookingRepository;
@@ -35,24 +38,28 @@ public class BookingService {
   private final BookingSearchCache bookingSearchCache;
 
   public List<BookingResponseDto> getAllBookings() {
+    LOG.debug("Fetching all bookings");
     return bookingRepository.findAll().stream()
         .map(bookingMapper::toResponseDto)
         .toList();
   }
 
   public BookingResponseDto getBookingById(Long id) {
+    LOG.debug("Fetching booking by id={}", id);
     Booking booking = bookingRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
     return bookingMapper.toResponseDto(booking);
   }
 
   public List<BookingResponseDto> getBookingsByClientId(Long clientId) {
+    LOG.debug("Fetching bookings by client id={}", clientId);
     return bookingRepository.findByClientId(clientId).stream()
         .map(bookingMapper::toResponseDto)
         .toList();
   }
 
   public List<BookingResponseDto> getBookingsByTourId(Long tourId) {
+    LOG.debug("Fetching bookings by tour id={}", tourId);
     return bookingRepository.findByTourId(tourId).stream()
         .map(bookingMapper::toResponseDto)
         .toList();
@@ -60,10 +67,11 @@ public class BookingService {
 
   @Transactional
   public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
+    LOG.info("Creating new booking");
     if (!bookingDto.isValid()) {
       throw new IllegalArgumentException(
-          "Необходимо указать либо существующий clientId, "
-          + "либо данные нового клиента (firstName, lastName, email)");
+          "Either existing clientId or "
+          + "new client data (firstName, lastName, email) must be provided");
     }
 
     Client client;
@@ -71,6 +79,7 @@ public class BookingService {
       client = clientRepository.findById(bookingDto.getClientId())
           .orElseThrow(() -> new NoSuchElementException(
               "Client not found with id: " + bookingDto.getClientId()));
+      LOG.debug("Using existing client id={}", client.getId());
     } else {
       if (clientRepository.findByEmail(bookingDto.getEmail()).isPresent()) {
         throw new IllegalArgumentException(
@@ -83,7 +92,7 @@ public class BookingService {
         }
         if (guideRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
           throw new IllegalArgumentException(
-              "Phone " + bookingDto.getPhone() + " already used by a guide");
+              "Phone " + bookingDto.getPhone() + " is already used by a guide");
         }
       }
       Client newClient = new Client();
@@ -92,6 +101,7 @@ public class BookingService {
       newClient.setEmail(bookingDto.getEmail());
       newClient.setPhone(bookingDto.getPhone());
       client = clientRepository.save(newClient);
+      LOG.debug("Created new client id={}", client.getId());
     }
 
     Tour tour = tourRepository.findById(bookingDto.getTourId())
@@ -103,11 +113,13 @@ public class BookingService {
     booking.setTour(tour);
     booking = bookingRepository.save(booking);
     bookingSearchCache.invalidateAll();
+    LOG.info("Booking created with id={}", booking.getId());
     return bookingMapper.toResponseDto(booking);
   }
 
   @Transactional
   public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
+    LOG.info("Updating booking id={}", id);
     Booking existingBooking = bookingRepository.findById(id)
         .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
 
@@ -117,6 +129,7 @@ public class BookingService {
           .orElseThrow(() -> new NoSuchElementException(
               "Client not found with id: " + bookingDto.getClientId()));
       existingBooking.setClient(client);
+      LOG.debug("Changed client to id={}", client.getId());
     }
 
     if (bookingDto.getTourId() != null
@@ -125,34 +138,41 @@ public class BookingService {
           .orElseThrow(() -> new NoSuchElementException(
               "Tour not found with id: " + bookingDto.getTourId()));
       existingBooking.setTour(tour);
+      LOG.debug("Changed tour to id={}", tour.getId());
     }
 
     existingBooking.setBookingDate(bookingDto.getBookingDate());
     existingBooking.setStatus(bookingDto.getStatus());
     existingBooking = bookingRepository.save(existingBooking);
     bookingSearchCache.invalidateAll();
+    LOG.info("Booking updated id={}", existingBooking.getId());
     return bookingMapper.toResponseDto(existingBooking);
   }
 
   @Transactional
   public void deleteBooking(Long id) {
+    LOG.info("Deleting booking id={}", id);
     if (!bookingRepository.existsById(id)) {
       throw new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id);
     }
     bookingRepository.deleteById(id);
     bookingSearchCache.invalidateAll();
+    LOG.info("Booking deleted id={}", id);
   }
 
   @Transactional(readOnly = true)
   public Page<BookingResponseDto> searchBookingsByClientLastNameJpql(String lastName,
                                                                      Pageable pageable) {
+    LOG.debug("JPQL search bookings by client last name: {}", lastName);
     String sortStr = pageable.getSort().toString();
     BookingSearchKey key = new BookingSearchKey(lastName, pageable.getPageNumber(),
         pageable.getPageSize(), sortStr);
     Page<BookingResponseDto> cached = bookingSearchCache.get(key);
     if (cached != null) {
+      LOG.debug("JPQL search: result from cache");
       return cached;
     }
+    LOG.debug("JPQL search: cache miss, querying database");
     Page<Booking> bookings = bookingRepository.findBookingsByClientLastNameJpql(lastName,
         pageable);
     Page<BookingResponseDto> result = bookings.map(bookingMapper::toResponseDto);
@@ -163,13 +183,16 @@ public class BookingService {
   @Transactional(readOnly = true)
   public Page<BookingResponseDto> searchBookingsByClientLastNameNative(String lastName,
                                                                        Pageable pageable) {
+    LOG.debug("Native search bookings by client last name: {}", lastName);
     String sortStr = pageable.getSort().toString();
     BookingSearchKey key = new BookingSearchKey(lastName, pageable.getPageNumber(),
         pageable.getPageSize(), sortStr);
     Page<BookingResponseDto> cached = bookingSearchCache.get(key);
     if (cached != null) {
+      LOG.debug("Native search: result from cache");
       return cached;
     }
+    LOG.debug("Native search: cache miss, querying database");
     Page<BookingNativeProjection> projections =
         bookingRepository.findBookingsByClientLastNameNative(lastName, pageable);
     Page<BookingResponseDto> result = projections.map(this::toResponseDto);

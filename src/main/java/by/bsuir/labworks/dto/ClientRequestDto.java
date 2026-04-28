@@ -1,5 +1,6 @@
 package by.bsuir.labworks.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -8,18 +9,23 @@ import lombok.Data;
 
 @Data
 public class ClientRequestDto {
-  @NotBlank(message = "Имя обязательно")
+
+  @NotBlank(message = "First name is required")
+  @Schema(example = "Darth")
   private String firstName;
 
-  @NotBlank(message = "Фамилия обязательна")
+  @NotBlank(message = "Last name is required")
+  @Schema(example = "Vader")
   private String lastName;
 
-  @NotBlank(message = "Email обязателен")
-  @Email(message = "Некорректный формат email")
-  @Size(max = 320, message = "Email не может превышать 320 символов")
+  @NotBlank(message = "Email is required")
+  @Email(message = "Invalid email format")
+  @Size(max = 320, message = "Email cannot exceed 320 characters")
+  @Schema(example = "darth.vader@empire.com")
   private String email;
 
   @Pattern(regexp = "^\\+\\d{7,15}$",
-      message = "Номер телефона должен начинаться с '+' и содержать от 7 до 15 цифр")
+      message = "Phone must start with '+' and contain 7 to 15 digits")
+  @Schema(example = "+375296666666")
   private String phone;
 }

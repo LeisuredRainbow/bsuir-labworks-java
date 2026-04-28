@@ -2,12 +2,17 @@ HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.properties
 .mvn/
-*.log
 .DS_Store
 .vscode/
 *.iml
 application-*.properties
 application-*.yml
+
+### Logs ###
+
+*.log
+logs/
+logs/*.log
 
 ### STS ###
 .apt_generated
