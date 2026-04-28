@@ -19,6 +19,7 @@ import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,9 @@ public class BookingService {
   private final TourRepository tourRepository;
   private final GuideRepository guideRepository;
   private final BookingSearchCache bookingSearchCache;
+
+  @Lazy
+  private final BookingService self;
 
   public List<BookingResponseDto> getAllBookings() {
     LOG.debug("Fetching all bookings");
@@ -215,7 +219,7 @@ public class BookingService {
   public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
     LOG.info("Creating bulk bookings with transaction, size={}", bookingDtos.size());
     return bookingDtos.stream()
-        .map(this::createBooking)
+        .map(self::createBooking)
         .toList();
   }
 
@@ -229,7 +233,7 @@ public class BookingService {
       BookingRequestDto dto = bookingDtos.get(i);
       String operationKey = "operation_" + (i + 1);
       try {
-        BookingResponseDto response = createBooking(dto);
+        BookingResponseDto response = self.createBooking(dto);
         successful.add(response);
       } catch (RuntimeException ex) {
         String message = ex.getMessage() == null
