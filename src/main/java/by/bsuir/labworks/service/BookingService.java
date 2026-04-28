@@ -7,6 +7,7 @@ import by.bsuir.labworks.dto.BookingResponseDto;
 import by.bsuir.labworks.entity.Booking;
 import by.bsuir.labworks.entity.Client;
 import by.bsuir.labworks.entity.Tour;
+import by.bsuir.labworks.exception.PartialBulkOperationException;
 import by.bsuir.labworks.mapper.BookingMapper;
 import by.bsuir.labworks.projection.BookingNativeProjection;
 import by.bsuir.labworks.repository.BookingRepository;
@@ -208,5 +209,47 @@ public class BookingService {
     dto.setTourId(proj.getTourId());
     dto.setStatus(proj.getStatus());
     return dto;
+  }
+
+  @Transactional
+  public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
+    LOG.info("Creating bulk bookings with transaction, size={}", bookingDtos.size());
+    return bookingDtos.stream()
+        .map(this::createBooking)
+        .toList();
+  }
+
+  public List<BookingResponseDto> createBulkBookingsWithoutTransaction(
+        List<BookingRequestDto> bookingDtos) {
+    LOG.info("Creating bulk bookings WITHOUT transaction, size={}", bookingDtos.size());
+    List<BookingResponseDto> successful = new java.util.ArrayList<>();
+    java.util.Map<String, String> failedOperations = new java.util.LinkedHashMap<>();
+
+    for (int i = 0; i < bookingDtos.size(); i++) {
+      BookingRequestDto dto = bookingDtos.get(i);
+      String operationKey = "operation_" + (i + 1);
+      try {
+        BookingResponseDto response = createBooking(dto);
+        successful.add(response);
+      } catch (RuntimeException ex) {
+        String message = ex.getMessage() == null
+            ? ex.getClass().getSimpleName()
+            : ex.getMessage();
+        failedOperations.put(operationKey, message);
+        LOG.warn("Failed to create booking in non-transactional bulk: {} - {}",
+            operationKey, message);
+      }
+    }
+
+    if (!failedOperations.isEmpty()) {
+      throw new PartialBulkOperationException(
+          "Some bookings were not saved",
+          successful.size(),
+          failedOperations.size(),
+          failedOperations);
+    }
+
+    LOG.info("Successfully created {} bookings without transaction", successful.size());
+    return successful;
   }
 }

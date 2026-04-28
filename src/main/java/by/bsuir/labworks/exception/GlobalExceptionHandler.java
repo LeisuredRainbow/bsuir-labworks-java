@@ -107,6 +107,23 @@ public class GlobalExceptionHandler {
         "Unexpected server error", request, null);
   }
 
+  @ExceptionHandler(by.bsuir.labworks.exception.PartialBulkOperationException.class)
+  public ResponseEntity<ErrorResponseDto> handlePartialBulkOperation(
+        by.bsuir.labworks.exception.PartialBulkOperationException ex,
+        HttpServletRequest request) {
+    Map<String, String> details = new LinkedHashMap<>();
+    details.put("savedCount", String.valueOf(ex.getSavedCount()));
+    details.put("failedCount", String.valueOf(ex.getFailedCount()));
+    details.putAll(ex.getFailedOperations());
+    LOG.warn("Partial bulk operation failure on path={} details={}",
+        request.getRequestURI(), details);
+    return buildErrorResponse(
+        HttpStatus.valueOf(422),
+        "Some operations failed: " + ex.getMessage(),
+        request,
+        details);
+  }
+
   private ResponseEntity<ErrorResponseDto> buildErrorResponse(
       HttpStatus status, String message, HttpServletRequest request,
       Map<String, String> validationErrors) {

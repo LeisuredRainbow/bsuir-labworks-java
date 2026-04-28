@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -107,5 +108,23 @@ public class BookingController {
       @RequestParam @NotBlank(message = "Last name must not be blank") String lastName,
       @PageableDefault(size = 10) Pageable pageable) {
     return bookingService.searchBookingsByClientLastNameNative(lastName, pageable);
+  }
+
+  @PostMapping("/bulk")
+  @ResponseStatus(HttpStatus.CREATED)
+  @Operation(summary = "Create multiple bookings (transactional – all or nothing)")
+  public List<BookingResponseDto> createBulkBookings(
+      @RequestBody @Valid @NotEmpty(message = "Booking list cannot be empty")
+      List<BookingRequestDto> bookingDtos) {
+    return bookingService.createBulkBookings(bookingDtos);
+  }
+
+  @PostMapping("/bulk/non-transactional")
+  @ResponseStatus(HttpStatus.CREATED)
+  @Operation(summary = "Create multiple bookings (non-transactional – partial save)")
+  public List<BookingResponseDto> createBulkBookingsWithoutTransaction(
+      @RequestBody @Valid @NotEmpty(message = "Booking list cannot be empty")
+      List<BookingRequestDto> bookingDtos) {
+    return bookingService.createBulkBookingsWithoutTransaction(bookingDtos);
   }
 }
