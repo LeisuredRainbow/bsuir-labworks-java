@@ -41,7 +41,6 @@ jobs:
       - name: Build, test and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          # Параметры подключения к PostgreSQL
           DB_USERNAME: travel_user
           DB_PASSWORD: travel_pass
         run: ./mvnw clean verify sonar:sonar -Dsonar.qualitygate.wait=true

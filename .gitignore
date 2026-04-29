@@ -7,6 +7,7 @@ target/
 *.iml
 application-*.properties
 application-*.yml
+.github/workflows/build.yml
 
 ### Logs ###
 
