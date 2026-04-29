@@ -6,13 +6,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import by.bsuir.labworks.dto.ClientRequestDto;
 import by.bsuir.labworks.dto.ClientResponseDto;
 import by.bsuir.labworks.entity.Client;
 import by.bsuir.labworks.mapper.ClientMapper;
 import by.bsuir.labworks.repository.ClientRepository;
 import by.bsuir.labworks.repository.GuideRepository;
+import java.util.Optional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,9 +144,9 @@ class ClientServiceTest {
 
   @Test
   void updateClientRejectsMissing() {
-    when(clientRepository.findById(4L)).thenReturn(java.util.Optional.empty());
-
-    assertThatThrownBy(() -> clientService.updateClient(4L, new ClientRequestDto()))
+    when(clientRepository.findById(4L)).thenReturn(Optional.empty());
+    ClientRequestDto requestDto = new ClientRequestDto();
+    assertThatThrownBy(() -> clientService.updateClient(4L, requestDto))
         .isInstanceOf(NoSuchElementException.class)
         .hasMessageContaining("Client not found");
   }

@@ -18,6 +18,7 @@ import by.bsuir.labworks.repository.GuideRepository;
 import by.bsuir.labworks.repository.HotelRepository;
 import by.bsuir.labworks.repository.TourRepository;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
@@ -205,12 +206,12 @@ class TourServiceTest {
 
   @Test
   void updateTourThrowsWhenMissing() {
-    when(tourRepository.findById(5L)).thenReturn(java.util.Optional.empty());
-
-    assertThatThrownBy(() -> tourService.updateTour(5L, new TourRequestDto()))
+    when(tourRepository.findById(5L)).thenReturn(Optional.empty());
+    TourRequestDto requestDto = new TourRequestDto();
+    assertThatThrownBy(() -> tourService.updateTour(5L, requestDto))
         .isInstanceOf(NoSuchElementException.class)
         .hasMessageContaining("Tour not found");
-  }
+}
 
   @Test
   void updateTourUsesRepositories() {

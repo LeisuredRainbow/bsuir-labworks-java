@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import by.bsuir.labworks.dto.GuideRequestDto;
 import by.bsuir.labworks.dto.GuideResponseDto;
 import by.bsuir.labworks.entity.Guide;
@@ -14,6 +13,7 @@ import by.bsuir.labworks.mapper.GuideMapper;
 import by.bsuir.labworks.repository.ClientRepository;
 import by.bsuir.labworks.repository.GuideRepository;
 import by.bsuir.labworks.repository.TourRepository;
+import java.util.Optional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,9 +143,9 @@ class GuideServiceTest {
 
   @Test
   void updateGuideRejectsMissing() {
-    when(guideRepository.findById(2L)).thenReturn(java.util.Optional.empty());
-
-    assertThatThrownBy(() -> guideService.updateGuide(2L, new GuideRequestDto()))
+    when(guideRepository.findById(2L)).thenReturn(Optional.empty());
+    GuideRequestDto requestDto = new GuideRequestDto();
+    assertThatThrownBy(() -> guideService.updateGuide(2L, requestDto))
         .isInstanceOf(NoSuchElementException.class)
         .hasMessageContaining("Guide not found");
   }

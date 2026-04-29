@@ -2,8 +2,8 @@ package by.bsuir.labworks.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import by.bsuir.labworks.dto.HotelRequestDto;
 import by.bsuir.labworks.dto.HotelResponseDto;
@@ -11,6 +11,7 @@ import by.bsuir.labworks.entity.Hotel;
 import by.bsuir.labworks.mapper.HotelMapper;
 import by.bsuir.labworks.repository.HotelRepository;
 import by.bsuir.labworks.repository.TourRepository;
+import java.util.Optional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,12 +127,12 @@ class HotelServiceTest {
 
   @Test
   void updateHotelRejectsMissing() {
-    when(hotelRepository.findById(3L)).thenReturn(java.util.Optional.empty());
-
-    assertThatThrownBy(() -> hotelService.updateHotel(3L, new HotelRequestDto()))
+    when(hotelRepository.findById(3L)).thenReturn(Optional.empty());
+    HotelRequestDto requestDto = new HotelRequestDto();
+    assertThatThrownBy(() -> hotelService.updateHotel(3L, requestDto))
         .isInstanceOf(NoSuchElementException.class)
         .hasMessageContaining("Hotel not found");
-  }
+}
 
   @Test
   void updateHotelRejectsDuplicateAddress() {
@@ -154,7 +155,7 @@ class HotelServiceTest {
   void updateHotelSavesAndMaps() {
     Hotel existing = new Hotel();
     existing.setAddress("old");
-    when(hotelRepository.findById(3L)).thenReturn(java.util.Optional.of(existing));
+    when(hotelRepository.findById(3L)).thenReturn(Optional.of(existing));
 
     HotelRequestDto dto = new HotelRequestDto();
     dto.setAddress("old");
@@ -163,8 +164,10 @@ class HotelServiceTest {
     when(hotelRepository.save(existing)).thenReturn(saved);
     when(hotelMapper.toResponseDto(saved)).thenReturn(new HotelResponseDto());
 
-    hotelService.updateHotel(3L, dto);
-  }
+    HotelResponseDto result = hotelService.updateHotel(3L, dto);
+    assertThat(result).isNotNull();
+    verify(hotelRepository, never()).findByAddress(any());
+}
 
   @Test
   void deleteHotelRejectsMissing() {
@@ -224,7 +227,7 @@ class HotelServiceTest {
   void updateHotelWithNullAddressSkipsDuplicateCheck() {
     Hotel existing = new Hotel();
     existing.setAddress("old");
-    when(hotelRepository.findById(3L)).thenReturn(java.util.Optional.of(existing));
+    when(hotelRepository.findById(3L)).thenReturn(Optional.of(existing));
 
     HotelRequestDto dto = new HotelRequestDto();
     dto.setAddress(null);
@@ -233,7 +236,9 @@ class HotelServiceTest {
     when(hotelRepository.save(existing)).thenReturn(saved);
     when(hotelMapper.toResponseDto(saved)).thenReturn(new HotelResponseDto());
 
-    hotelService.updateHotel(3L, dto);
+    HotelResponseDto result = hotelService.updateHotel(3L, dto);
+    assertThat(result).isNotNull();
+    verify(hotelRepository, never()).findByAddress(any());
   }
 
 }
