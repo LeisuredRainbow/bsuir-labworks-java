@@ -1,4 +1,4 @@
-package by.bsuir.labworks.exception;
+package by.bsuir.labworks.dto;
 
 import java.time.LocalDateTime;
 import java.util.Map;

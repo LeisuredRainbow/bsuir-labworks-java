@@ -1,5 +1,6 @@
 package by.bsuir.labworks.exception;
 
+import by.bsuir.labworks.dto.ErrorResponseDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
