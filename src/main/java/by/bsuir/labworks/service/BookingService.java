@@ -68,54 +68,7 @@ public class BookingService {
 
   @Transactional
   public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
-    LOG.info("Creating new booking");
-    if (!bookingDto.isValid()) {
-      throw new IllegalArgumentException(
-          "Either existing clientId or new"
-          + "client data (firstName, lastName, email) must be provided");
-    }
-
-    Client client;
-    if (bookingDto.getClientId() != null) {
-      client = clientRepository.findById(bookingDto.getClientId())
-          .orElseThrow(() -> new NoSuchElementException(
-              "Client not found with id: " + bookingDto.getClientId()));
-      LOG.debug("Using existing client id={}", client.getId());
-    } else {
-      if (clientRepository.findByEmail(bookingDto.getEmail()).isPresent()) {
-        throw new IllegalArgumentException(
-            "Client with email " + bookingDto.getEmail() + " already exists");
-      }
-      if (bookingDto.getPhone() != null) {
-        if (clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
-          throw new IllegalArgumentException(
-              "Client with phone " + bookingDto.getPhone() + " already exists");
-        }
-        if (guideRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
-          throw new IllegalArgumentException(
-              "Phone " + bookingDto.getPhone() + " is already used by a guide");
-        }
-      }
-      Client newClient = new Client();
-      newClient.setFirstName(bookingDto.getFirstName());
-      newClient.setLastName(bookingDto.getLastName());
-      newClient.setEmail(bookingDto.getEmail());
-      newClient.setPhone(bookingDto.getPhone());
-      client = clientRepository.save(newClient);
-      LOG.debug("Created new client id={}", client.getId());
-    }
-
-    Tour tour = tourRepository.findById(bookingDto.getTourId())
-        .orElseThrow(() -> new NoSuchElementException(
-            "Tour not found with id: " + bookingDto.getTourId()));
-
-    Booking booking = bookingMapper.toEntity(bookingDto);
-    booking.setClient(client);
-    booking.setTour(tour);
-    booking = bookingRepository.save(booking);
-    bookingSearchCache.invalidateAll();
-    LOG.info("Booking created with id={}", booking.getId());
-    return bookingMapper.toResponseDto(booking);
+    return toResponseDto(createBookingInternal(bookingDto));
   }
 
   @Transactional
@@ -201,21 +154,12 @@ public class BookingService {
     return result;
   }
 
-  private BookingResponseDto toResponseDto(BookingNativeProjection proj) {
-    BookingResponseDto dto = new BookingResponseDto();
-    dto.setId(proj.getId());
-    dto.setBookingDate(proj.getBookingDate());
-    dto.setClientId(proj.getClientId());
-    dto.setTourId(proj.getTourId());
-    dto.setStatus(proj.getStatus());
-    return dto;
-  }
-
   @Transactional
   public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
     LOG.info("Creating bulk bookings with transaction, size={}", bookingDtos.size());
     return bookingDtos.stream()
-        .map(this::createBooking)
+        .map(this::createBookingInternal)
+        .map(this::toResponseDto)
         .toList();
   }
 
@@ -229,8 +173,8 @@ public class BookingService {
       BookingRequestDto dto = bookingDtos.get(i);
       String operationKey = "operation_" + (i + 1);
       try {
-        BookingResponseDto response = createBooking(dto);
-        successful.add(response);
+        Booking saved = createBookingInternal(dto);
+        successful.add(toResponseDto(saved));
       } catch (RuntimeException ex) {
         String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
         failedOperations.put(operationKey, message);
@@ -249,5 +193,70 @@ public class BookingService {
 
     LOG.info("Successfully created {} bookings without transaction", successful.size());
     return successful;
+  }
+
+  private Booking createBookingInternal(BookingRequestDto bookingDto) {
+    LOG.info("Creating new booking");
+    if (!bookingDto.isValid()) {
+      throw new IllegalArgumentException(
+          "Either existing clientId or new"
+          + " client data (firstName, lastName, email) must be provided");
+    }
+
+    Client client;
+    if (bookingDto.getClientId() != null) {
+      client = clientRepository.findById(bookingDto.getClientId())
+          .orElseThrow(() -> new NoSuchElementException(
+              "Client not found with id: " + bookingDto.getClientId()));
+      LOG.debug("Using existing client id={}", client.getId());
+    } else {
+      if (clientRepository.findByEmail(bookingDto.getEmail()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Client with email " + bookingDto.getEmail() + " already exists");
+      }
+      if (bookingDto.getPhone() != null) {
+        if (clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+          throw new IllegalArgumentException(
+              "Client with phone " + bookingDto.getPhone() + " already exists");
+        }
+        if (guideRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+          throw new IllegalArgumentException(
+              "Phone " + bookingDto.getPhone() + " is already used by a guide");
+        }
+      }
+      Client newClient = new Client();
+      newClient.setFirstName(bookingDto.getFirstName());
+      newClient.setLastName(bookingDto.getLastName());
+      newClient.setEmail(bookingDto.getEmail());
+      newClient.setPhone(bookingDto.getPhone());
+      client = clientRepository.save(newClient);
+      LOG.debug("Created new client id={}", client.getId());
+    }
+
+    Tour tour = tourRepository.findById(bookingDto.getTourId())
+        .orElseThrow(() -> new NoSuchElementException(
+            "Tour not found with id: " + bookingDto.getTourId()));
+
+    Booking booking = bookingMapper.toEntity(bookingDto);
+    booking.setClient(client);
+    booking.setTour(tour);
+    booking = bookingRepository.save(booking);
+    bookingSearchCache.invalidateAll();
+    LOG.info("Booking created with id={}", booking.getId());
+    return booking;
+  }
+
+  private BookingResponseDto toResponseDto(Booking booking) {
+    return bookingMapper.toResponseDto(booking);
+  }
+
+  private BookingResponseDto toResponseDto(BookingNativeProjection proj) {
+    BookingResponseDto dto = new BookingResponseDto();
+    dto.setId(proj.getId());
+    dto.setBookingDate(proj.getBookingDate());
+    dto.setClientId(proj.getClientId());
+    dto.setTourId(proj.getTourId());
+    dto.setStatus(proj.getStatus());
+    return dto;
   }
 }

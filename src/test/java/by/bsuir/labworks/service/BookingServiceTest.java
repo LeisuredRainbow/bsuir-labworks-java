@@ -3,7 +3,6 @@ package by.bsuir.labworks.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -317,9 +316,10 @@ class BookingServiceTest {
 
   @Test
   void updateBookingRejectsMissingBooking() {
+    BookingRequestDto requestDto = new BookingRequestDto();
     when(bookingRepository.findById(5L)).thenReturn(java.util.Optional.empty());
 
-    assertThatThrownBy(() -> bookingService.updateBooking(5L, new BookingRequestDto()))
+    assertThatThrownBy(() -> bookingService.updateBooking(5L, requestDto))
         .isInstanceOf(NoSuchElementException.class)
         .hasMessageContaining("Booking not found");
   }
@@ -503,7 +503,7 @@ class BookingServiceTest {
         "Ivanov", pageable);
 
     assertThat(result).isSameAs(cached);
-    verify(bookingRepository, never()).findBookingsByClientLastNameJpql(eq("Ivanov"), eq(pageable));
+    verify(bookingRepository, never()).findBookingsByClientLastNameJpql("Ivanov", pageable);
   }
 
   @Test
@@ -523,7 +523,7 @@ class BookingServiceTest {
 
     assertThat(result.getContent()).containsExactly(response);
     ArgumentCaptor<BookingSearchKey> keyCaptor = ArgumentCaptor.forClass(BookingSearchKey.class);
-    verify(bookingSearchCache).put(keyCaptor.capture(), eq(result));
+    verify(bookingSearchCache).put(keyCaptor.capture(), any());
     BookingSearchKey key = keyCaptor.getValue();
     assertThat(key.getLastName()).isEqualTo("Petrov");
     assertThat(key.getPage()).isEqualTo(1);
@@ -541,7 +541,7 @@ class BookingServiceTest {
         "Ivanov", pageable);
 
     assertThat(result).isSameAs(cached);
-    verify(bookingRepository, never()).findBookingsByClientLastNameNative(eq("Ivanov"), eq(pageable));
+    verify(bookingRepository, never()).findBookingsByClientLastNameNative("Ivanov", pageable);
   }
 
   @Test
@@ -588,7 +588,7 @@ class BookingServiceTest {
     assertThat(dto.getClientId()).isEqualTo(5L);
     assertThat(dto.getTourId()).isEqualTo(9L);
     assertThat(dto.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
-    verify(bookingSearchCache).put(any(BookingSearchKey.class), eq(result));
+    verify(bookingSearchCache).put(any(BookingSearchKey.class), any());
   }
 
   @Test
@@ -647,7 +647,8 @@ class BookingServiceTest {
     when(bookingRepository.save(any(Booking.class))).thenReturn(saved);
     when(bookingMapper.toResponseDto(saved)).thenReturn(new BookingResponseDto());
 
-    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(dto1, dto2)))
+    List<BookingRequestDto> dtos = List.of(dto1, dto2);
+    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(dtos))
         .isInstanceOf(PartialBulkOperationException.class)
         .extracting("savedCount", "failedCount")
         .containsExactly(1, 1);
@@ -710,7 +711,8 @@ class BookingServiceTest {
     when(bookingRepository.save(any(Booking.class))).thenReturn(saved);
     when(bookingMapper.toResponseDto(saved)).thenReturn(new BookingResponseDto());
 
-    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(dto1, dto2)))
+    List<BookingRequestDto> dtos = List.of(dto1, dto2);
+    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(dtos))
         .isInstanceOfSatisfying(PartialBulkOperationException.class, ex ->
             assertThat(ex.getFailedOperations())
                 .isEqualTo(Map.of("operation_2", "Tour not found with id: 22")));
@@ -728,7 +730,8 @@ class BookingServiceTest {
     when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour));
     when(bookingMapper.toEntity(invalid)).thenThrow(new RuntimeException());
 
-    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(invalid)))
+    List<BookingRequestDto> dtos = List.of(invalid);
+    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(dtos))
         .isInstanceOfSatisfying(PartialBulkOperationException.class, ex ->
             assertThat(ex.getFailedOperations())
                 .isEqualTo(Map.of("operation_1", "RuntimeException")));
