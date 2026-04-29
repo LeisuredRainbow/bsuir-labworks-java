@@ -244,4 +244,72 @@ class GuideServiceTest {
     verify(tourRepository).removeGuideFromAllTours(7L);
     verify(guideRepository).delete(guide);
   }
+  @Test
+  void createGuideWithNullPhoneSkipsPhoneChecks() {
+    GuideRequestDto dto = new GuideRequestDto();
+    dto.setEmail("a@b.com");
+
+    when(guideRepository.findByEmail("a@b.com")).thenReturn(java.util.Optional.empty());
+
+    Guide entity = new Guide();
+    Guide saved = new Guide();
+    GuideResponseDto response = new GuideResponseDto();
+    when(guideMapper.toEntity(dto)).thenReturn(entity);
+    when(guideRepository.save(entity)).thenReturn(saved);
+    when(guideMapper.toResponseDto(saved)).thenReturn(response);
+
+    GuideResponseDto result = guideService.createGuide(dto);
+
+    assertThat(result).isSameAs(response);
+    verify(guideRepository, never()).findByPhone(any());
+    verify(clientRepository, never()).findByPhone(any());
+  }
+
+  @Test
+  void updateGuideUpdatesWhenEmailAndPhoneAreUnique() {
+    Guide existing = new Guide();
+    existing.setEmail("old@b.com");
+    existing.setPhone("+111111111");
+    when(guideRepository.findById(2L)).thenReturn(java.util.Optional.of(existing));
+
+    GuideRequestDto dto = new GuideRequestDto();
+    dto.setEmail("new@b.com");
+    dto.setPhone("+333333333");
+
+    when(guideRepository.findByEmail("new@b.com")).thenReturn(java.util.Optional.empty());
+    when(guideRepository.findByPhone("+333333333")).thenReturn(java.util.Optional.empty());
+    when(clientRepository.findByPhone("+333333333")).thenReturn(java.util.Optional.empty());
+
+    Guide saved = new Guide();
+    when(guideRepository.save(existing)).thenReturn(saved);
+    when(guideMapper.toResponseDto(saved)).thenReturn(new GuideResponseDto());
+
+    guideService.updateGuide(2L, dto);
+
+    verify(guideRepository).findByEmail("new@b.com");
+    verify(guideRepository).findByPhone("+333333333");
+    verify(clientRepository).findByPhone("+333333333");
+  }
+
+  @Test
+  void updateGuideSkipsPhoneChecksWhenPhoneNull() {
+    Guide existing = new Guide();
+    existing.setEmail("old@b.com");
+    existing.setPhone("+111111111");
+    when(guideRepository.findById(2L)).thenReturn(java.util.Optional.of(existing));
+
+    GuideRequestDto dto = new GuideRequestDto();
+    dto.setEmail("old@b.com");
+    dto.setPhone(null);
+
+    Guide saved = new Guide();
+    when(guideRepository.save(existing)).thenReturn(saved);
+    when(guideMapper.toResponseDto(saved)).thenReturn(new GuideResponseDto());
+
+    guideService.updateGuide(2L, dto);
+
+    verify(guideRepository, never()).findByPhone(any());
+    verify(clientRepository, never()).findByPhone(any());
+  }
+
 }

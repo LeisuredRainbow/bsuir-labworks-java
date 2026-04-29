@@ -183,6 +183,27 @@ class TourServiceTest {
   }
 
   @Test
+  void updateTourClearsRelationsWhenIdsAreNullAndEmpty() {
+    TourRequestDto dto = new TourRequestDto();
+    dto.setHotelIds(null);
+    dto.setGuideIds(List.of());
+
+    Tour existing = new Tour();
+    existing.getHotels().add(new Hotel());
+    existing.getGuides().add(new Guide());
+    when(tourRepository.findById(6L)).thenReturn(java.util.Optional.of(existing));
+
+    Tour saved = new Tour();
+    when(tourRepository.save(existing)).thenReturn(saved);
+    when(tourMapper.toResponseDto(saved)).thenReturn(new TourResponseDto());
+
+    tourService.updateTour(6L, dto);
+
+    assertThat(existing.getHotels()).isEmpty();
+    assertThat(existing.getGuides()).isEmpty();
+  }
+
+  @Test
   void updateTourThrowsWhenMissing() {
     when(tourRepository.findById(5L)).thenReturn(java.util.Optional.empty());
 

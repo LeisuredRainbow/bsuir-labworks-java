@@ -224,4 +224,63 @@ class ClientServiceTest {
 
     verify(clientRepository).delete(client);
   }
+  @Test
+  void createClientSavesAndMapsWhenPhoneNull() {
+    ClientRequestDto dto = new ClientRequestDto();
+    Client entity = new Client();
+    Client saved = new Client();
+    ClientResponseDto response = new ClientResponseDto();
+
+    when(clientMapper.toEntity(dto)).thenReturn(entity);
+    when(clientRepository.save(entity)).thenReturn(saved);
+    when(clientMapper.toResponseDto(saved)).thenReturn(response);
+
+    ClientResponseDto result = clientService.createClient(dto);
+
+    assertThat(result).isSameAs(response);
+    verify(clientRepository, never()).findByPhone(any());
+    verify(guideRepository, never()).findByPhone(any());
+  }
+
+  @Test
+  void updateClientUpdatesWhenNewPhoneAvailable() {
+    Client existing = new Client();
+    existing.setPhone("+111111111");
+    when(clientRepository.findById(5L)).thenReturn(java.util.Optional.of(existing));
+
+    ClientRequestDto dto = new ClientRequestDto();
+    dto.setPhone("+333333333");
+
+    when(clientRepository.findByPhone("+333333333")).thenReturn(java.util.Optional.empty());
+    when(guideRepository.findByPhone("+333333333")).thenReturn(java.util.Optional.empty());
+
+    Client saved = new Client();
+    when(clientRepository.save(existing)).thenReturn(saved);
+    when(clientMapper.toResponseDto(saved)).thenReturn(new ClientResponseDto());
+
+    clientService.updateClient(5L, dto);
+
+    verify(clientRepository).findByPhone("+333333333");
+    verify(guideRepository).findByPhone("+333333333");
+  }
+
+  @Test
+  void updateClientSkipsPhoneChecksWhenPhoneNull() {
+    Client existing = new Client();
+    existing.setPhone("+111111111");
+    when(clientRepository.findById(5L)).thenReturn(java.util.Optional.of(existing));
+
+    ClientRequestDto dto = new ClientRequestDto();
+    dto.setPhone(null);
+
+    Client saved = new Client();
+    when(clientRepository.save(existing)).thenReturn(saved);
+    when(clientMapper.toResponseDto(saved)).thenReturn(new ClientResponseDto());
+
+    clientService.updateClient(5L, dto);
+
+    verify(clientRepository, never()).findByPhone(any());
+    verify(guideRepository, never()).findByPhone(any());
+  }
+
 }

@@ -19,7 +19,6 @@ import java.util.NoSuchElementException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,9 +37,6 @@ public class BookingService {
   private final TourRepository tourRepository;
   private final GuideRepository guideRepository;
   private final BookingSearchCache bookingSearchCache;
-
-  @Lazy
-  private final BookingService self;
 
   public List<BookingResponseDto> getAllBookings() {
     LOG.debug("Fetching all bookings");
@@ -75,8 +71,8 @@ public class BookingService {
     LOG.info("Creating new booking");
     if (!bookingDto.isValid()) {
       throw new IllegalArgumentException(
-          "Either existing clientId or "
-          + "new client data (firstName, lastName, email) must be provided");
+          "Either existing clientId or new"
+          + "client data (firstName, lastName, email) must be provided");
     }
 
     Client client;
@@ -219,7 +215,7 @@ public class BookingService {
   public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
     LOG.info("Creating bulk bookings with transaction, size={}", bookingDtos.size());
     return bookingDtos.stream()
-        .map(self::createBooking)
+        .map(this::createBooking)
         .toList();
   }
 
@@ -233,12 +229,10 @@ public class BookingService {
       BookingRequestDto dto = bookingDtos.get(i);
       String operationKey = "operation_" + (i + 1);
       try {
-        BookingResponseDto response = self.createBooking(dto);
+        BookingResponseDto response = createBooking(dto);
         successful.add(response);
       } catch (RuntimeException ex) {
-        String message = ex.getMessage() == null
-            ? ex.getClass().getSimpleName()
-            : ex.getMessage();
+        String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
         failedOperations.put(operationKey, message);
         LOG.warn("Failed to create booking in non-transactional bulk: {} - {}",
             operationKey, message);

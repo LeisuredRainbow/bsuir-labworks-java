@@ -185,4 +185,55 @@ class HotelServiceTest {
     verify(tourRepository).removeHotelFromAllTours(6L);
     verify(hotelRepository).delete(hotel);
   }
+  @Test
+  void createHotelWithNullAddressSkipsDuplicateCheck() {
+    HotelRequestDto dto = new HotelRequestDto();
+    Hotel entity = new Hotel();
+    Hotel saved = new Hotel();
+    HotelResponseDto response = new HotelResponseDto();
+
+    when(hotelMapper.toEntity(dto)).thenReturn(entity);
+    when(hotelRepository.save(entity)).thenReturn(saved);
+    when(hotelMapper.toResponseDto(saved)).thenReturn(response);
+
+    HotelResponseDto result = hotelService.createHotel(dto);
+
+    assertThat(result).isSameAs(response);
+  }
+
+  @Test
+  void updateHotelWithNewUniqueAddressSaves() {
+    Hotel existing = new Hotel();
+    existing.setAddress("old");
+    when(hotelRepository.findById(3L)).thenReturn(java.util.Optional.of(existing));
+
+    HotelRequestDto dto = new HotelRequestDto();
+    dto.setAddress("new");
+
+    when(hotelRepository.findByAddress("new")).thenReturn(java.util.Optional.empty());
+    Hotel saved = new Hotel();
+    when(hotelRepository.save(existing)).thenReturn(saved);
+    when(hotelMapper.toResponseDto(saved)).thenReturn(new HotelResponseDto());
+
+    hotelService.updateHotel(3L, dto);
+
+    verify(hotelRepository).findByAddress("new");
+  }
+
+  @Test
+  void updateHotelWithNullAddressSkipsDuplicateCheck() {
+    Hotel existing = new Hotel();
+    existing.setAddress("old");
+    when(hotelRepository.findById(3L)).thenReturn(java.util.Optional.of(existing));
+
+    HotelRequestDto dto = new HotelRequestDto();
+    dto.setAddress(null);
+
+    Hotel saved = new Hotel();
+    when(hotelRepository.save(existing)).thenReturn(saved);
+    when(hotelMapper.toResponseDto(saved)).thenReturn(new HotelResponseDto());
+
+    hotelService.updateHotel(3L, dto);
+  }
+
 }

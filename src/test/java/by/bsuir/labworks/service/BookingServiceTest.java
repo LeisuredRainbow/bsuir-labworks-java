@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,7 +37,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
@@ -71,10 +68,7 @@ class BookingServiceTest {
         bookingMapper,
         clientRepository,
         tourRepository,
-        guideRepository,
-        bookingSearchCache,
-        null);
-    ReflectionTestUtils.setField(bookingService, "self", bookingService);
+        guideRepository, bookingSearchCache);
   }
 
   @Test
@@ -226,6 +220,36 @@ class BookingServiceTest {
   }
 
   @Test
+  void createBookingCreatesNewClientWithoutPhone() {
+    BookingRequestDto dto = baseBookingRequest();
+    dto.setClientId(null);
+    dto.setFirstName("Alex");
+    dto.setLastName("Petrov");
+    dto.setEmail("alex2@example.com");
+    dto.setPhone(null);
+
+    when(clientRepository.findByEmail("alex2@example.com")).thenReturn(java.util.Optional.empty());
+
+    Client savedClient = new Client();
+    savedClient.setId(2L);
+    when(clientRepository.save(any(Client.class))).thenReturn(savedClient);
+
+    Tour tour = new Tour();
+    tour.setId(11L);
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour));
+
+    Booking booking = new Booking();
+    when(bookingMapper.toEntity(dto)).thenReturn(new Booking());
+    when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+    when(bookingMapper.toResponseDto(booking)).thenReturn(new BookingResponseDto());
+
+    bookingService.createBooking(dto);
+
+    verify(clientRepository, never()).findByPhone(any());
+    verify(guideRepository, never()).findByPhone(any());
+  }
+
+  @Test
   void createBookingRejectsExistingEmail() {
     BookingRequestDto dto = baseBookingRequest();
     dto.setClientId(null);
@@ -344,6 +368,36 @@ class BookingServiceTest {
     assertThat(existing.getBookingDate()).isEqualTo(dto.getBookingDate());
     assertThat(existing.getStatus()).isEqualTo(dto.getStatus());
     verify(bookingSearchCache).invalidateAll();
+  }
+
+  @Test
+  void updateBookingSkipsTourLookupWhenTourIdIsNull() {
+    Booking existing = new Booking();
+    Client oldClient = new Client();
+    oldClient.setId(1L);
+    Tour oldTour = new Tour();
+    oldTour.setId(10L);
+    existing.setClient(oldClient);
+    existing.setTour(oldTour);
+    when(bookingRepository.findById(6L)).thenReturn(java.util.Optional.of(existing));
+
+    Client newClient = new Client();
+    newClient.setId(2L);
+    when(clientRepository.findById(2L)).thenReturn(java.util.Optional.of(newClient));
+
+    BookingRequestDto dto = baseBookingRequest();
+    dto.setClientId(2L);
+    dto.setTourId(null);
+    dto.setBookingDate(LocalDate.now().plusDays(3));
+    dto.setStatus(BookingStatus.PENDING);
+
+    Booking saved = new Booking();
+    when(bookingRepository.save(existing)).thenReturn(saved);
+    when(bookingMapper.toResponseDto(saved)).thenReturn(new BookingResponseDto());
+
+    bookingService.updateBooking(6L, dto);
+
+    verify(tourRepository, never()).findById(any());
   }
 
   @Test
@@ -538,19 +592,35 @@ class BookingServiceTest {
   }
 
   @Test
-  void createBulkBookingsDelegatesToSelf() {
-    BookingService selfMock = mock(BookingService.class);
-    ReflectionTestUtils.setField(bookingService, "self", selfMock);
-
+  void createBulkBookingsCreatesAll() {
+    BookingRequestDto dto1 = baseBookingRequest();
+    dto1.setClientId(7L);
+    BookingRequestDto dto2 = baseBookingRequest();
+    dto2.setClientId(8L);
+    dto2.setTourId(22L);
+    Client client1 = new Client();
+    client1.setId(7L);
+    Client client2 = new Client();
+    client2.setId(8L);
+    Tour tour1 = new Tour();
+    tour1.setId(11L);
+    Tour tour2 = new Tour();
+    tour2.setId(22L);
+    when(clientRepository.findById(7L)).thenReturn(java.util.Optional.of(client1));
+    when(clientRepository.findById(8L)).thenReturn(java.util.Optional.of(client2));
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour1));
+    when(tourRepository.findById(22L)).thenReturn(java.util.Optional.of(tour2));
+    when(bookingMapper.toEntity(any(BookingRequestDto.class)))
+        .thenReturn(new Booking(), new Booking());
+    Booking saved1 = new Booking();
+    saved1.setId(1L);
+    Booking saved2 = new Booking();
+    saved2.setId(2L);
+    when(bookingRepository.save(any(Booking.class))).thenReturn(saved1, saved2);
     BookingResponseDto first = new BookingResponseDto();
     BookingResponseDto second = new BookingResponseDto();
-
-    BookingRequestDto dto1 = baseBookingRequest();
-    BookingRequestDto dto2 = baseBookingRequest();
-    dto2.setTourId(22L);
-    dto2.setTourId(22L);
-    when(selfMock.createBooking(dto1)).thenReturn(first);
-    when(selfMock.createBooking(dto2)).thenReturn(second);
+    when(bookingMapper.toResponseDto(saved1)).thenReturn(first);
+    when(bookingMapper.toResponseDto(saved2)).thenReturn(second);
 
     List<BookingResponseDto> result = bookingService.createBulkBookings(List.of(dto1, dto2));
 
@@ -559,15 +629,23 @@ class BookingServiceTest {
 
   @Test
   void createBulkBookingsWithoutTransactionThrowsPartialException() {
-    BookingService selfMock = mock(BookingService.class);
-    ReflectionTestUtils.setField(bookingService, "self", selfMock);
-
     BookingRequestDto dto1 = baseBookingRequest();
+    dto1.setClientId(7L);
     BookingRequestDto dto2 = baseBookingRequest();
     dto2.setTourId(22L);
-    BookingResponseDto ok = new BookingResponseDto();
-    when(selfMock.createBooking(dto1)).thenReturn(ok);
-    doThrow(new RuntimeException()).when(selfMock).createBooking(dto2);
+    dto2.setClientId(999L);
+    Client client1 = new Client();
+    client1.setId(7L);
+    Tour tour1 = new Tour();
+    tour1.setId(11L);
+    when(clientRepository.findById(7L)).thenReturn(java.util.Optional.of(client1));
+    when(clientRepository.findById(999L)).thenReturn(java.util.Optional.empty());
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour1));
+    when(bookingMapper.toEntity(dto1)).thenReturn(new Booking());
+    Booking saved = new Booking();
+    saved.setId(1L);
+    when(bookingRepository.save(any(Booking.class))).thenReturn(saved);
+    when(bookingMapper.toResponseDto(saved)).thenReturn(new BookingResponseDto());
 
     assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(dto1, dto2)))
         .isInstanceOf(PartialBulkOperationException.class)
@@ -577,16 +655,32 @@ class BookingServiceTest {
 
   @Test
   void createBulkBookingsWithoutTransactionReturnsAllOnSuccess() {
-    BookingService selfMock = mock(BookingService.class);
-    ReflectionTestUtils.setField(bookingService, "self", selfMock);
-
     BookingRequestDto dto1 = baseBookingRequest();
+    dto1.setClientId(7L);
     BookingRequestDto dto2 = baseBookingRequest();
+    dto2.setClientId(8L);
     dto2.setTourId(22L);
+    Client client1 = new Client();
+    client1.setId(7L);
+    Client client2 = new Client();
+    client2.setId(8L);
+    Tour tour1 = new Tour();
+    tour1.setId(11L);
+    Tour tour2 = new Tour();
+    tour2.setId(22L);
+    when(clientRepository.findById(7L)).thenReturn(java.util.Optional.of(client1));
+    when(clientRepository.findById(8L)).thenReturn(java.util.Optional.of(client2));
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour1));
+    when(tourRepository.findById(22L)).thenReturn(java.util.Optional.of(tour2));
+    when(bookingMapper.toEntity(any(BookingRequestDto.class)))
+        .thenReturn(new Booking(), new Booking());
+    Booking saved1 = new Booking();
+    Booking saved2 = new Booking();
+    when(bookingRepository.save(any(Booking.class))).thenReturn(saved1, saved2);
     BookingResponseDto r1 = new BookingResponseDto();
     BookingResponseDto r2 = new BookingResponseDto();
-    when(selfMock.createBooking(dto1)).thenReturn(r1);
-    when(selfMock.createBooking(dto2)).thenReturn(r2);
+    when(bookingMapper.toResponseDto(saved1)).thenReturn(r1);
+    when(bookingMapper.toResponseDto(saved2)).thenReturn(r2);
 
     List<BookingResponseDto> result = bookingService.createBulkBookingsWithoutTransaction(
         List.of(dto1, dto2));
@@ -596,20 +690,48 @@ class BookingServiceTest {
 
   @Test
   void createBulkBookingsWithoutTransactionCapturesFailureMessage() {
-    BookingService selfMock = mock(BookingService.class);
-    ReflectionTestUtils.setField(bookingService, "self", selfMock);
-
     BookingRequestDto dto1 = baseBookingRequest();
+    dto1.setClientId(7L);
     BookingRequestDto dto2 = baseBookingRequest();
     dto2.setTourId(22L);
-    BookingResponseDto ok = new BookingResponseDto();
-    when(selfMock.createBooking(dto1)).thenReturn(ok);
-    doThrow(new IllegalStateException("boom")).when(selfMock).createBooking(dto2);
+    dto2.setClientId(8L);
+    Client client1 = new Client();
+    client1.setId(7L);
+    Client client2 = new Client();
+    client2.setId(8L);
+    Tour tour1 = new Tour();
+    tour1.setId(11L);
+    when(clientRepository.findById(7L)).thenReturn(java.util.Optional.of(client1));
+    when(clientRepository.findById(8L)).thenReturn(java.util.Optional.of(client2));
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour1));
+    when(tourRepository.findById(22L)).thenReturn(java.util.Optional.empty());
+    when(bookingMapper.toEntity(dto1)).thenReturn(new Booking());
+    Booking saved = new Booking();
+    when(bookingRepository.save(any(Booking.class))).thenReturn(saved);
+    when(bookingMapper.toResponseDto(saved)).thenReturn(new BookingResponseDto());
 
     assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(dto1, dto2)))
         .isInstanceOfSatisfying(PartialBulkOperationException.class, ex ->
             assertThat(ex.getFailedOperations())
-                .isEqualTo(Map.of("operation_2", "boom")));
+                .isEqualTo(Map.of("operation_2", "Tour not found with id: 22")));
+  }
+
+  @Test
+  void createBulkBookingsWithoutTransactionUsesExceptionTypeWhenMessageIsNull() {
+    BookingRequestDto invalid = baseBookingRequest();
+    invalid.setClientId(7L);
+    Client client = new Client();
+    client.setId(7L);
+    Tour tour = new Tour();
+    tour.setId(11L);
+    when(clientRepository.findById(7L)).thenReturn(java.util.Optional.of(client));
+    when(tourRepository.findById(11L)).thenReturn(java.util.Optional.of(tour));
+    when(bookingMapper.toEntity(invalid)).thenThrow(new RuntimeException());
+
+    assertThatThrownBy(() -> bookingService.createBulkBookingsWithoutTransaction(List.of(invalid)))
+        .isInstanceOfSatisfying(PartialBulkOperationException.class, ex ->
+            assertThat(ex.getFailedOperations())
+                .isEqualTo(Map.of("operation_1", "RuntimeException")));
   }
 
   private BookingRequestDto baseBookingRequest() {
