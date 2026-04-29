@@ -46,10 +46,12 @@ public class BookingRequestDto {
       allowableValues = {"CONFIRMED", "PENDING", "CANCELLED"})
   private BookingStatus status;
 
+  @Schema(hidden = true)
   public boolean isNewClient() {
     return clientId == null && firstName != null && lastName != null && email != null;
   }
 
+  @Schema(hidden = true)
   public boolean isValid() {
     return (clientId != null) || isNewClient();
   }
