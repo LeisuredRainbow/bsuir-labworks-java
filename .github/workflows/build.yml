@@ -1,0 +1,47 @@
+name: Build and SonarCloud
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: travel_agency
+          POSTGRES_USER: travel_user
+          POSTGRES_PASSWORD: travel_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U travel_user -d travel_agency"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Build, test and analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          # Параметры подключения к PostgreSQL
+          DB_USERNAME: travel_user
+          DB_PASSWORD: travel_pass
+        run: ./mvnw clean verify sonar:sonar -Dsonar.qualitygate.wait=true
