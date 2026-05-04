@@ -21,6 +21,8 @@ public class ClientService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClientService.class);
   private static final String CLIENT_NOT_FOUND_MSG = "Client not found with id: ";
+  private static final String ID_CANNOT_BE_NULL = "ID cannot be null";
+  private static final String CLIENT_DATA_CANNOT_BE_NULL = "Client data cannot be null";
 
   private final ClientRepository clientRepository;
   private final ClientMapper clientMapper;
@@ -35,7 +37,7 @@ public class ClientService {
 
   public ClientResponseDto getClientById(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.debug("Fetching client by id={}", safeId);
     Client client = clientRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));
@@ -54,7 +56,7 @@ public class ClientService {
 
   public ClientResponseDto createClient(ClientRequestDto clientDto) {
     ClientRequestDto safeDto = Optional.ofNullable(clientDto)
-        .orElseThrow(() -> new IllegalArgumentException("Client data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(CLIENT_DATA_CANNOT_BE_NULL));
     LOG.info("Creating new client");
     if (safeDto.getPhone() != null) {
       if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
@@ -75,9 +77,9 @@ public class ClientService {
   @Transactional
   public ClientResponseDto updateClient(Long id, ClientRequestDto clientDto) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     ClientRequestDto safeDto = Optional.ofNullable(clientDto)
-        .orElseThrow(() -> new IllegalArgumentException("Client data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(CLIENT_DATA_CANNOT_BE_NULL));
     LOG.info("Updating client id={}", safeId);
     Client existingClient = clientRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));
@@ -105,7 +107,7 @@ public class ClientService {
   @Transactional
   public void deleteClient(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Deleting client id={}", safeId);
     Client client = clientRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));

@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TourService {
   private static final Logger LOG = LoggerFactory.getLogger(TourService.class);
+  private static final String ID_CANNOT_BE_NULL = "ID cannot be null";
+  private static final String TOUR_DATA_CANNOT_BE_NULL = "Tour data cannot be null";
+  private static final String PRICE_CANNOT_BE_NULL = "Price cannot be null";
 
   private final TourRepository tourRepository;
   private final TourMapper tourMapper;
@@ -50,7 +53,7 @@ public class TourService {
 
   public TourResponseDto getTourById(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.debug("Fetching tour by id={}", safeId);
     Tour tour = tourRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + safeId));
@@ -59,7 +62,7 @@ public class TourService {
 
   public TourResponseDto createTour(TourRequestDto tourDto) {
     TourRequestDto safeDto = Optional.ofNullable(tourDto)
-        .orElseThrow(() -> new IllegalArgumentException("Tour data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(TOUR_DATA_CANNOT_BE_NULL));
     LOG.info("Creating new tour");
     Tour tour = tourMapper.toEntity(safeDto);
     setHotelAndGuideRelations(tour, safeDto);
@@ -71,9 +74,9 @@ public class TourService {
   @Transactional
   public TourResponseDto updateTour(Long id, TourRequestDto tourDto) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     TourRequestDto safeDto = Optional.ofNullable(tourDto)
-        .orElseThrow(() -> new IllegalArgumentException("Tour data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(TOUR_DATA_CANNOT_BE_NULL));
     LOG.info("Updating tour id={}", safeId);
     Tour existingTour = tourRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + safeId));
@@ -118,7 +121,7 @@ public class TourService {
 
   public List<TourResponseDto> getToursByPrice(BigDecimal price) {
     BigDecimal safePrice = Optional.ofNullable(price)
-        .orElseThrow(() -> new IllegalArgumentException("Price cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(PRICE_CANNOT_BE_NULL));
     LOG.debug("Fetching tours by exact price: {}", safePrice);
     return tourRepository.findByPrice(safePrice).stream()
         .map(tourMapper::toResponseDto)
@@ -146,7 +149,7 @@ public class TourService {
   @Transactional
   public void deleteTour(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Deleting tour id={}", safeId);
     if (!tourRepository.existsById(safeId)) {
       throw new NoSuchElementException("Tour not found with id: " + safeId);

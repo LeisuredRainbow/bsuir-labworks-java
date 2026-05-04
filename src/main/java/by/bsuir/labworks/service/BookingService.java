@@ -31,6 +31,15 @@ public class BookingService {
 
   private static final Logger LOG = LoggerFactory.getLogger(BookingService.class);
   private static final String BOOKING_NOT_FOUND_MSG = "Booking not found with id: ";
+  private static final String ID_CANNOT_BE_NULL = "ID cannot be null";
+  private static final String BOOKING_DATA_CANNOT_BE_NULL = "Booking data cannot be null";
+  private static final String BOOKING_LIST_CANNOT_BE_NULL = "Booking list cannot be null";
+  private static final String LAST_NAME_CANNOT_BE_NULL = "Last name cannot be null";
+  private static final String PAGEABLE_CANNOT_BE_NULL = "Pageable cannot be null";
+  private static final String BOOKING_CANNOT_BE_NULL = "Booking cannot be null";
+  private static final String PROJECTION_CANNOT_BE_NULL = "Projection cannot be null";
+  private static final String CLIENT_ID_CANNOT_BE_NULL = "Client ID cannot be null";
+  private static final String TOUR_ID_CANNOT_BE_NULL = "Tour ID cannot be null";
 
   private final BookingRepository bookingRepository;
   private final BookingMapper bookingMapper;
@@ -48,7 +57,7 @@ public class BookingService {
 
   public BookingResponseDto getBookingById(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.debug("Fetching booking by id={}", safeId);
     Booking booking = bookingRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId));
@@ -57,7 +66,7 @@ public class BookingService {
 
   public List<BookingResponseDto> getBookingsByClientId(Long clientId) {
     Long safeClientId = Optional.ofNullable(clientId)
-        .orElseThrow(() -> new IllegalArgumentException("Client ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(CLIENT_ID_CANNOT_BE_NULL));
     LOG.debug("Fetching bookings by client id={}", safeClientId);
     return bookingRepository.findByClientId(safeClientId).stream()
         .map(bookingMapper::toResponseDto)
@@ -66,7 +75,7 @@ public class BookingService {
 
   public List<BookingResponseDto> getBookingsByTourId(Long tourId) {
     Long safeTourId = Optional.ofNullable(tourId)
-        .orElseThrow(() -> new IllegalArgumentException("Tour ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(TOUR_ID_CANNOT_BE_NULL));
     LOG.debug("Fetching bookings by tour id={}", safeTourId);
     return bookingRepository.findByTourId(safeTourId).stream()
         .map(bookingMapper::toResponseDto)
@@ -76,16 +85,16 @@ public class BookingService {
   @Transactional
   public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
     BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
-        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_DATA_CANNOT_BE_NULL));
     return toResponseDto(createBookingInternal(safeDto));
   }
 
   @Transactional
   public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
-        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_DATA_CANNOT_BE_NULL));
     LOG.info("Updating booking id={}", safeId);
     Booking existingBooking = bookingRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId));
@@ -119,7 +128,7 @@ public class BookingService {
   @Transactional
   public void deleteBooking(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Deleting booking id={}", safeId);
     if (!bookingRepository.existsById(safeId)) {
       throw new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId);
@@ -133,9 +142,9 @@ public class BookingService {
   public Page<BookingResponseDto> searchBookingsByClientLastNameJpql(
         String lastName, Pageable pageable) {
     String safeLastName = Optional.ofNullable(lastName)
-        .orElseThrow(() -> new IllegalArgumentException("Last name cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(LAST_NAME_CANNOT_BE_NULL));
     Pageable safePageable = Optional.ofNullable(pageable)
-        .orElseThrow(() -> new IllegalArgumentException("Pageable cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(PAGEABLE_CANNOT_BE_NULL));
     LOG.debug("JPQL search bookings by client last name: {}", safeLastName);
     String sortStr = safePageable.getSort().toString();
     BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
@@ -157,9 +166,9 @@ public class BookingService {
   public Page<BookingResponseDto> searchBookingsByClientLastNameNative(
         String lastName, Pageable pageable) {
     String safeLastName = Optional.ofNullable(lastName)
-        .orElseThrow(() -> new IllegalArgumentException("Last name cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(LAST_NAME_CANNOT_BE_NULL));
     Pageable safePageable = Optional.ofNullable(pageable)
-        .orElseThrow(() -> new IllegalArgumentException("Pageable cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(PAGEABLE_CANNOT_BE_NULL));
     LOG.debug("Native search bookings by client last name: {}", safeLastName);
     String sortStr = safePageable.getSort().toString();
     BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
@@ -180,7 +189,7 @@ public class BookingService {
   @Transactional
   public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
     List<BookingRequestDto> safeList = Optional.ofNullable(bookingDtos)
-        .orElseThrow(() -> new IllegalArgumentException("Booking list cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_LIST_CANNOT_BE_NULL));
     LOG.info("Creating bulk bookings with transaction, size={}", safeList.size());
     return safeList.stream()
         .map(this::createBookingInternal)
@@ -191,7 +200,7 @@ public class BookingService {
   public List<BookingResponseDto> createBulkBookingsWithoutTransaction(
         List<BookingRequestDto> bookingDtos) {
     List<BookingRequestDto> safeList = Optional.ofNullable(bookingDtos)
-        .orElseThrow(() -> new IllegalArgumentException("Booking list cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_LIST_CANNOT_BE_NULL));
     LOG.info("Creating bulk bookings WITHOUT transaction, size={}", safeList.size());
     List<BookingResponseDto> successful = new java.util.ArrayList<>();
     java.util.Map<String, String> failedOperations = new java.util.LinkedHashMap<>();
@@ -225,7 +234,7 @@ public class BookingService {
 
   private Booking createBookingInternal(BookingRequestDto bookingDto) {
     BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
-        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_DATA_CANNOT_BE_NULL));
     LOG.info("Creating new booking");
     if (!safeDto.isValid()) {
       throw new IllegalArgumentException(
@@ -279,7 +288,7 @@ public class BookingService {
   private BookingResponseDto toResponseDto(Booking booking) {
     return Optional.ofNullable(booking)
         .map(bookingMapper::toResponseDto)
-        .orElseThrow(() -> new IllegalArgumentException("Booking cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(BOOKING_CANNOT_BE_NULL));
   }
 
   private BookingResponseDto toResponseDto(BookingNativeProjection proj) {
@@ -293,6 +302,6 @@ public class BookingService {
           dto.setStatus(p.getStatus());
           return dto;
         })
-        .orElseThrow(() -> new IllegalArgumentException("Projection cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(PROJECTION_CANNOT_BE_NULL));
   }
 }

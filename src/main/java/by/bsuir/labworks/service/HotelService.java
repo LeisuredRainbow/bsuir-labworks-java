@@ -21,6 +21,8 @@ public class HotelService {
 
   private static final Logger LOG = LoggerFactory.getLogger(HotelService.class);
   private static final String HOTEL_NOT_FOUND_MSG = "Hotel not found with id: ";
+  private static final String ID_CANNOT_BE_NULL = "ID cannot be null";
+  private static final String HOTEL_DATA_CANNOT_BE_NULL = "Hotel data cannot be null";
 
   private final HotelRepository hotelRepository;
   private final HotelMapper hotelMapper;
@@ -35,7 +37,7 @@ public class HotelService {
 
   public HotelResponseDto getHotelById(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.debug("Fetching hotel by id={}", safeId);
     Hotel hotel = hotelRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(HOTEL_NOT_FOUND_MSG + safeId));
@@ -54,7 +56,7 @@ public class HotelService {
 
   public HotelResponseDto createHotel(HotelRequestDto hotelDto) {
     HotelRequestDto safeDto = Optional.ofNullable(hotelDto)
-        .orElseThrow(() -> new IllegalArgumentException("Hotel data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(HOTEL_DATA_CANNOT_BE_NULL));
     LOG.info("Creating new hotel");
     if (safeDto.getAddress() != null
         && hotelRepository.findByAddress(safeDto.getAddress()).isPresent()) {
@@ -69,9 +71,9 @@ public class HotelService {
 
   public HotelResponseDto updateHotel(Long id, HotelRequestDto hotelDto) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     HotelRequestDto safeDto = Optional.ofNullable(hotelDto)
-        .orElseThrow(() -> new IllegalArgumentException("Hotel data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(HOTEL_DATA_CANNOT_BE_NULL));
     LOG.info("Updating hotel id={}", safeId);
     Hotel existingHotel = hotelRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(HOTEL_NOT_FOUND_MSG + safeId));
@@ -92,7 +94,7 @@ public class HotelService {
   @Transactional
   public void deleteHotel(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Deleting hotel id={}", safeId);
     Hotel hotel = hotelRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(HOTEL_NOT_FOUND_MSG + safeId));

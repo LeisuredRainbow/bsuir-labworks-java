@@ -22,6 +22,8 @@ public class GuideService {
 
   private static final Logger LOG = LoggerFactory.getLogger(GuideService.class);
   private static final String GUIDE_NOT_FOUND_MSG = "Guide not found with id: ";
+  private static final String ID_CANNOT_BE_NULL = "ID cannot be null";
+  private static final String GUIDE_DATA_CANNOT_BE_NULL = "Guide data cannot be null";
 
   private final GuideRepository guideRepository;
   private final GuideMapper guideMapper;
@@ -37,7 +39,7 @@ public class GuideService {
 
   public GuideResponseDto getGuideById(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.debug("Fetching guide by id={}", safeId);
     Guide guide = guideRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
@@ -46,7 +48,7 @@ public class GuideService {
 
   public GuideResponseDto createGuide(GuideRequestDto guideDto) {
     GuideRequestDto safeDto = Optional.ofNullable(guideDto)
-        .orElseThrow(() -> new IllegalArgumentException("Guide data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(GUIDE_DATA_CANNOT_BE_NULL));
     LOG.info("Creating new guide");
     if (safeDto.getEmail() != null
         && guideRepository.findByEmail(safeDto.getEmail()).isPresent()) {
@@ -71,9 +73,9 @@ public class GuideService {
 
   public GuideResponseDto updateGuide(Long id, GuideRequestDto guideDto) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     GuideRequestDto safeDto = Optional.ofNullable(guideDto)
-        .orElseThrow(() -> new IllegalArgumentException("Guide data cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(GUIDE_DATA_CANNOT_BE_NULL));
     LOG.info("Updating guide id={}", safeId);
     Guide existingGuide = guideRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
@@ -107,7 +109,7 @@ public class GuideService {
   @Transactional
   public void deleteGuide(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Deleting guide id={}", safeId);
     Guide guide = guideRepository.findById(safeId)
         .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
