@@ -9,6 +9,7 @@ import by.bsuir.labworks.repository.GuideRepository;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,32 +34,39 @@ public class ClientService {
   }
 
   public ClientResponseDto getClientById(Long id) {
-    LOG.debug("Fetching client by id={}", id);
-    Client client = clientRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.debug("Fetching client by id={}", safeId);
+    Client client = clientRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));
     return clientMapper.toResponseDto(client);
   }
 
   public ClientResponseDto getClientByEmail(String email) {
-    LOG.debug("Fetching client by email={}", email);
-    Client client = clientRepository.findByEmail(email)
-        .orElseThrow(() -> new NoSuchElementException("Client not found with email: " + email));
+    String safeEmail = Optional.ofNullable(email)
+        .orElseThrow(() -> new IllegalArgumentException("Email cannot be null"));
+    LOG.debug("Fetching client by email={}", safeEmail);
+    Client client = clientRepository.findByEmail(safeEmail)
+        .orElseThrow(() -> new NoSuchElementException(
+            "Client not found with email: " + safeEmail));
     return clientMapper.toResponseDto(client);
   }
 
   public ClientResponseDto createClient(ClientRequestDto clientDto) {
+    ClientRequestDto safeDto = Optional.ofNullable(clientDto)
+        .orElseThrow(() -> new IllegalArgumentException("Client data cannot be null"));
     LOG.info("Creating new client");
-    if (clientDto.getPhone() != null) {
-      if (clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Client with phone "
-            + clientDto.getPhone() + " already exists");
+    if (safeDto.getPhone() != null) {
+      if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Client with phone " + safeDto.getPhone() + " already exists");
       }
-      if (guideRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Phone "
-            + clientDto.getPhone() + " is already used by a guide");
+      if (guideRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Phone " + safeDto.getPhone() + " is already used by a guide");
       }
     }
-    Client client = clientMapper.toEntity(clientDto);
+    Client client = clientMapper.toEntity(safeDto);
     client = clientRepository.save(client);
     LOG.info("Client created with id={}", client.getId());
     return clientMapper.toResponseDto(client);
@@ -66,24 +74,29 @@ public class ClientService {
 
   @Transactional
   public ClientResponseDto updateClient(Long id, ClientRequestDto clientDto) {
-    LOG.info("Updating client id={}", id);
-    Client existingClient = clientRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + id));
-    if (clientDto.getPhone() != null && !clientDto.getPhone().equals(existingClient.getPhone())) {
-      if (clientRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Client with phone "
-            + clientDto.getPhone() + " already exists");
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    ClientRequestDto safeDto = Optional.ofNullable(clientDto)
+        .orElseThrow(() -> new IllegalArgumentException("Client data cannot be null"));
+    LOG.info("Updating client id={}", safeId);
+    Client existingClient = clientRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));
+    if (safeDto.getPhone() != null
+        && !safeDto.getPhone().equals(existingClient.getPhone())) {
+      if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Client with phone " + safeDto.getPhone() + " already exists");
       }
-      if (guideRepository.findByPhone(clientDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Phone "
-            + clientDto.getPhone() + " is already used by a guide");
+      if (guideRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Phone " + safeDto.getPhone() + " is already used by a guide");
       }
     }
 
-    existingClient.setFirstName(clientDto.getFirstName());
-    existingClient.setLastName(clientDto.getLastName());
-    existingClient.setEmail(clientDto.getEmail());
-    existingClient.setPhone(clientDto.getPhone());
+    existingClient.setFirstName(safeDto.getFirstName());
+    existingClient.setLastName(safeDto.getLastName());
+    existingClient.setEmail(safeDto.getEmail());
+    existingClient.setPhone(safeDto.getPhone());
     existingClient = clientRepository.save(existingClient);
     LOG.info("Client updated id={}", existingClient.getId());
     return clientMapper.toResponseDto(existingClient);
@@ -91,10 +104,12 @@ public class ClientService {
 
   @Transactional
   public void deleteClient(Long id) {
-    LOG.info("Deleting client id={}", id);
-    Client client = clientRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.info("Deleting client id={}", safeId);
+    Client client = clientRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(CLIENT_NOT_FOUND_MSG + safeId));
     clientRepository.delete(client);
-    LOG.info("Client deleted id={}", id);
+    LOG.info("Client deleted id={}", safeId);
   }
 }

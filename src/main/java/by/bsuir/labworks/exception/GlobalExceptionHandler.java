@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -16,8 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentConversionNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ControllerAdvice
@@ -62,6 +65,32 @@ public class GlobalExceptionHandler {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, null);
   }
 
+  @ExceptionHandler(ConversionFailedException.class)
+  public ResponseEntity<ErrorResponseDto> handleConversionFailed(
+      ConversionFailedException ex, HttpServletRequest request) {
+    String message = String.format("Invalid value for parameter: %s", ex.getValue());
+    LOG.warn("Conversion failed on path={} message={}", request.getRequestURI(), message);
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, null);
+  }
+
+  @ExceptionHandler(MethodArgumentConversionNotSupportedException.class)
+  public ResponseEntity<ErrorResponseDto> handleMethodArgumentConversionNotSupported(
+      MethodArgumentConversionNotSupportedException ex, HttpServletRequest request) {
+    String message = String.format("Invalid value for parameter '%s': %s",
+        ex.getName(), ex.getValue());
+    LOG.warn("Argument conversion not supported on path={} message={}",
+        request.getRequestURI(), message);
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, null);
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErrorResponseDto> handleMissingParameter(
+      MissingServletRequestParameterException ex, HttpServletRequest request) {
+    String message = String.format("Required parameter '%s' is missing", ex.getParameterName());
+    LOG.warn("Missing parameter on path={} message={}", request.getRequestURI(), message);
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, message, request, null);
+  }
+
   @ExceptionHandler(HttpMessageNotReadableException.class)
   public ResponseEntity<ErrorResponseDto> handleHttpMessageNotReadable(
       HttpMessageNotReadableException ex, HttpServletRequest request) {
@@ -100,14 +129,6 @@ public class GlobalExceptionHandler {
     return buildErrorResponse(HttpStatus.BAD_REQUEST, VALIDATION_FAILED_MESSAGE, request, errors);
   }
 
-  @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponseDto> handleUnexpectedException(Exception ex,
-      HttpServletRequest request) {
-    LOG.error("Unexpected error on path={}", request.getRequestURI(), ex);
-    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
-        "Unexpected server error", request, null);
-  }
-
   @ExceptionHandler(by.bsuir.labworks.exception.PartialBulkOperationException.class)
   public ResponseEntity<ErrorResponseDto> handlePartialBulkOperation(
         by.bsuir.labworks.exception.PartialBulkOperationException ex,
@@ -123,6 +144,23 @@ public class GlobalExceptionHandler {
         "Some operations failed: " + ex.getMessage(),
         request,
         details);
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ErrorResponseDto> handleUnexpectedException(Exception ex,
+      HttpServletRequest request) {
+    String exceptionName = ex.getClass().getName();
+    if (exceptionName.contains("InvalidDataAccessApiUsageException")
+        || exceptionName.contains("PropertyReferenceException")
+        || exceptionName.contains("InvalidSortPropertyException")) {
+      LOG.warn("Invalid sort or page parameter on path={} message={}",
+          request.getRequestURI(), ex.getMessage());
+      return buildErrorResponse(HttpStatus.BAD_REQUEST,
+          "Invalid parameter: " + ex.getMessage(), request, null);
+    }
+    LOG.error("Unexpected error on path={}", request.getRequestURI(), ex);
+    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+        "Unexpected server error", request, null);
   }
 
   private ResponseEntity<ErrorResponseDto> buildErrorResponse(

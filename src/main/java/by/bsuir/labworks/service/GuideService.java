@@ -10,6 +10,7 @@ import by.bsuir.labworks.repository.TourRepository;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,59 +36,69 @@ public class GuideService {
   }
 
   public GuideResponseDto getGuideById(Long id) {
-    LOG.debug("Fetching guide by id={}", id);
-    Guide guide = guideRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.debug("Fetching guide by id={}", safeId);
+    Guide guide = guideRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
     return guideMapper.toResponseDto(guide);
   }
 
   public GuideResponseDto createGuide(GuideRequestDto guideDto) {
+    GuideRequestDto safeDto = Optional.ofNullable(guideDto)
+        .orElseThrow(() -> new IllegalArgumentException("Guide data cannot be null"));
     LOG.info("Creating new guide");
-    if (guideDto.getEmail() != null
-        && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
-      throw new IllegalArgumentException("Guide with email "
-          + guideDto.getEmail() + " already exists");
+    if (safeDto.getEmail() != null
+        && guideRepository.findByEmail(safeDto.getEmail()).isPresent()) {
+      throw new IllegalArgumentException(
+          "Guide with email " + safeDto.getEmail() + " already exists");
     }
-    if (guideDto.getPhone() != null) {
-      if (guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Guide with phone "
-            + guideDto.getPhone() + " already exists");
+    if (safeDto.getPhone() != null) {
+      if (guideRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Guide with phone " + safeDto.getPhone() + " already exists");
       }
-      if (clientRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Phone "
-            + guideDto.getPhone() + " is already used by a client");
+      if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Phone " + safeDto.getPhone() + " is already used by a client");
       }
     }
-    Guide guide = guideMapper.toEntity(guideDto);
+    Guide guide = guideMapper.toEntity(safeDto);
     guide = guideRepository.save(guide);
     LOG.info("Guide created with id={}", guide.getId());
     return guideMapper.toResponseDto(guide);
   }
 
   public GuideResponseDto updateGuide(Long id, GuideRequestDto guideDto) {
-    LOG.info("Updating guide id={}", id);
-    Guide existingGuide = guideRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
-    if (guideDto.getEmail() != null && !guideDto.getEmail().equals(existingGuide.getEmail())
-        && guideRepository.findByEmail(guideDto.getEmail()).isPresent()) {
-      throw new IllegalArgumentException("Guide with email "
-          + guideDto.getEmail() + " already exists");
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    GuideRequestDto safeDto = Optional.ofNullable(guideDto)
+        .orElseThrow(() -> new IllegalArgumentException("Guide data cannot be null"));
+    LOG.info("Updating guide id={}", safeId);
+    Guide existingGuide = guideRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
+    if (safeDto.getEmail() != null
+        && !safeDto.getEmail().equals(existingGuide.getEmail())
+        && guideRepository.findByEmail(safeDto.getEmail()).isPresent()) {
+      throw new IllegalArgumentException(
+          "Guide with email " + safeDto.getEmail() + " already exists");
     }
-    if (guideDto.getPhone() != null && !guideDto.getPhone().equals(existingGuide.getPhone())) {
-      if (guideRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Guide with phone "
-            + guideDto.getPhone() + " already exists");
+    if (safeDto.getPhone() != null
+        && !safeDto.getPhone().equals(existingGuide.getPhone())) {
+      if (guideRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Guide with phone " + safeDto.getPhone() + " already exists");
       }
-      if (clientRepository.findByPhone(guideDto.getPhone()).isPresent()) {
-        throw new IllegalArgumentException("Phone "
-            + guideDto.getPhone() + " is already used by a client");
+      if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
+        throw new IllegalArgumentException(
+            "Phone " + safeDto.getPhone() + " is already used by a client");
       }
     }
-    existingGuide.setFirstName(guideDto.getFirstName());
-    existingGuide.setLastName(guideDto.getLastName());
-    existingGuide.setPhone(guideDto.getPhone());
-    existingGuide.setEmail(guideDto.getEmail());
-    existingGuide.setExperienceYears(guideDto.getExperienceYears());
+    existingGuide.setFirstName(safeDto.getFirstName());
+    existingGuide.setLastName(safeDto.getLastName());
+    existingGuide.setPhone(safeDto.getPhone());
+    existingGuide.setEmail(safeDto.getEmail());
+    existingGuide.setExperienceYears(safeDto.getExperienceYears());
     existingGuide = guideRepository.save(existingGuide);
     LOG.info("Guide updated id={}", existingGuide.getId());
     return guideMapper.toResponseDto(existingGuide);
@@ -95,11 +106,13 @@ public class GuideService {
 
   @Transactional
   public void deleteGuide(Long id) {
-    LOG.info("Deleting guide id={}", id);
-    Guide guide = guideRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + id));
-    tourRepository.removeGuideFromAllTours(id);
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.info("Deleting guide id={}", safeId);
+    Guide guide = guideRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(GUIDE_NOT_FOUND_MSG + safeId));
+    tourRepository.removeGuideFromAllTours(safeId);
     guideRepository.delete(guide);
-    LOG.info("Guide deleted id={}", id);
+    LOG.info("Guide deleted id={}", safeId);
   }
 }

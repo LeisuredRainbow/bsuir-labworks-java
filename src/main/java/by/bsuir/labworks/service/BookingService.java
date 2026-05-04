@@ -16,6 +16,7 @@ import by.bsuir.labworks.repository.GuideRepository;
 import by.bsuir.labworks.repository.TourRepository;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,57 +47,69 @@ public class BookingService {
   }
 
   public BookingResponseDto getBookingById(Long id) {
-    LOG.debug("Fetching booking by id={}", id);
-    Booking booking = bookingRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.debug("Fetching booking by id={}", safeId);
+    Booking booking = bookingRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId));
     return bookingMapper.toResponseDto(booking);
   }
 
   public List<BookingResponseDto> getBookingsByClientId(Long clientId) {
-    LOG.debug("Fetching bookings by client id={}", clientId);
-    return bookingRepository.findByClientId(clientId).stream()
+    Long safeClientId = Optional.ofNullable(clientId)
+        .orElseThrow(() -> new IllegalArgumentException("Client ID cannot be null"));
+    LOG.debug("Fetching bookings by client id={}", safeClientId);
+    return bookingRepository.findByClientId(safeClientId).stream()
         .map(bookingMapper::toResponseDto)
         .toList();
   }
 
   public List<BookingResponseDto> getBookingsByTourId(Long tourId) {
-    LOG.debug("Fetching bookings by tour id={}", tourId);
-    return bookingRepository.findByTourId(tourId).stream()
+    Long safeTourId = Optional.ofNullable(tourId)
+        .orElseThrow(() -> new IllegalArgumentException("Tour ID cannot be null"));
+    LOG.debug("Fetching bookings by tour id={}", safeTourId);
+    return bookingRepository.findByTourId(safeTourId).stream()
         .map(bookingMapper::toResponseDto)
         .toList();
   }
 
   @Transactional
   public BookingResponseDto createBooking(BookingRequestDto bookingDto) {
-    return toResponseDto(createBookingInternal(bookingDto));
+    BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
+        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
+    return toResponseDto(createBookingInternal(safeDto));
   }
 
   @Transactional
   public BookingResponseDto updateBooking(Long id, BookingRequestDto bookingDto) {
-    LOG.info("Updating booking id={}", id);
-    Booking existingBooking = bookingRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
+        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
+    LOG.info("Updating booking id={}", safeId);
+    Booking existingBooking = bookingRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId));
 
-    if (bookingDto.getClientId() != null
-        && !bookingDto.getClientId().equals(existingBooking.getClient().getId())) {
-      Client client = clientRepository.findById(bookingDto.getClientId())
+    if (safeDto.getClientId() != null
+        && !safeDto.getClientId().equals(existingBooking.getClient().getId())) {
+      Client client = clientRepository.findById(safeDto.getClientId())
           .orElseThrow(() -> new NoSuchElementException(
-              "Client not found with id: " + bookingDto.getClientId()));
+              "Client not found with id: " + safeDto.getClientId()));
       existingBooking.setClient(client);
       LOG.debug("Changed client to id={}", client.getId());
     }
 
-    if (bookingDto.getTourId() != null
-        && !bookingDto.getTourId().equals(existingBooking.getTour().getId())) {
-      Tour tour = tourRepository.findById(bookingDto.getTourId())
+    if (safeDto.getTourId() != null
+        && !safeDto.getTourId().equals(existingBooking.getTour().getId())) {
+      Tour tour = tourRepository.findById(safeDto.getTourId())
           .orElseThrow(() -> new NoSuchElementException(
-              "Tour not found with id: " + bookingDto.getTourId()));
+              "Tour not found with id: " + safeDto.getTourId()));
       existingBooking.setTour(tour);
       LOG.debug("Changed tour to id={}", tour.getId());
     }
 
-    existingBooking.setBookingDate(bookingDto.getBookingDate());
-    existingBooking.setStatus(bookingDto.getStatus());
+    existingBooking.setBookingDate(safeDto.getBookingDate());
+    existingBooking.setStatus(safeDto.getStatus());
     existingBooking = bookingRepository.save(existingBooking);
     bookingSearchCache.invalidateAll();
     LOG.info("Booking updated id={}", existingBooking.getId());
@@ -105,42 +118,52 @@ public class BookingService {
 
   @Transactional
   public void deleteBooking(Long id) {
-    LOG.info("Deleting booking id={}", id);
-    if (!bookingRepository.existsById(id)) {
-      throw new NoSuchElementException(BOOKING_NOT_FOUND_MSG + id);
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.info("Deleting booking id={}", safeId);
+    if (!bookingRepository.existsById(safeId)) {
+      throw new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId);
     }
-    bookingRepository.deleteById(id);
+    bookingRepository.deleteById(safeId);
     bookingSearchCache.invalidateAll();
-    LOG.info("Booking deleted id={}", id);
+    LOG.info("Booking deleted id={}", safeId);
   }
 
   @Transactional(readOnly = true)
-  public Page<BookingResponseDto> searchBookingsByClientLastNameJpql(String lastName,
-                                                                     Pageable pageable) {
-    LOG.debug("JPQL search bookings by client last name: {}", lastName);
-    String sortStr = pageable.getSort().toString();
-    BookingSearchKey key = new BookingSearchKey(lastName, pageable.getPageNumber(),
-        pageable.getPageSize(), sortStr);
+  public Page<BookingResponseDto> searchBookingsByClientLastNameJpql(
+        String lastName, Pageable pageable) {
+    String safeLastName = Optional.ofNullable(lastName)
+        .orElseThrow(() -> new IllegalArgumentException("Last name cannot be null"));
+    Pageable safePageable = Optional.ofNullable(pageable)
+        .orElseThrow(() -> new IllegalArgumentException("Pageable cannot be null"));
+    LOG.debug("JPQL search bookings by client last name: {}", safeLastName);
+    String sortStr = safePageable.getSort().toString();
+    BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
+        safePageable.getPageSize(), sortStr);
     Page<BookingResponseDto> cached = bookingSearchCache.get(key);
     if (cached != null) {
       LOG.debug("JPQL search: result from cache");
       return cached;
     }
     LOG.debug("JPQL search: cache miss, querying database");
-    Page<Booking> bookings = bookingRepository.findBookingsByClientLastNameJpql(lastName,
-        pageable);
+    Page<Booking> bookings = bookingRepository.findBookingsByClientLastNameJpql(
+        safeLastName, safePageable);
     Page<BookingResponseDto> result = bookings.map(bookingMapper::toResponseDto);
     bookingSearchCache.put(key, result);
     return result;
   }
 
   @Transactional(readOnly = true)
-  public Page<BookingResponseDto> searchBookingsByClientLastNameNative(String lastName,
-                                                                       Pageable pageable) {
-    LOG.debug("Native search bookings by client last name: {}", lastName);
-    String sortStr = pageable.getSort().toString();
-    BookingSearchKey key = new BookingSearchKey(lastName, pageable.getPageNumber(),
-        pageable.getPageSize(), sortStr);
+  public Page<BookingResponseDto> searchBookingsByClientLastNameNative(
+        String lastName, Pageable pageable) {
+    String safeLastName = Optional.ofNullable(lastName)
+        .orElseThrow(() -> new IllegalArgumentException("Last name cannot be null"));
+    Pageable safePageable = Optional.ofNullable(pageable)
+        .orElseThrow(() -> new IllegalArgumentException("Pageable cannot be null"));
+    LOG.debug("Native search bookings by client last name: {}", safeLastName);
+    String sortStr = safePageable.getSort().toString();
+    BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
+        safePageable.getPageSize(), sortStr);
     Page<BookingResponseDto> cached = bookingSearchCache.get(key);
     if (cached != null) {
       LOG.debug("Native search: result from cache");
@@ -148,7 +171,7 @@ public class BookingService {
     }
     LOG.debug("Native search: cache miss, querying database");
     Page<BookingNativeProjection> projections =
-        bookingRepository.findBookingsByClientLastNameNative(lastName, pageable);
+        bookingRepository.findBookingsByClientLastNameNative(safeLastName, safePageable);
     Page<BookingResponseDto> result = projections.map(this::toResponseDto);
     bookingSearchCache.put(key, result);
     return result;
@@ -156,8 +179,10 @@ public class BookingService {
 
   @Transactional
   public List<BookingResponseDto> createBulkBookings(List<BookingRequestDto> bookingDtos) {
-    LOG.info("Creating bulk bookings with transaction, size={}", bookingDtos.size());
-    return bookingDtos.stream()
+    List<BookingRequestDto> safeList = Optional.ofNullable(bookingDtos)
+        .orElseThrow(() -> new IllegalArgumentException("Booking list cannot be null"));
+    LOG.info("Creating bulk bookings with transaction, size={}", safeList.size());
+    return safeList.stream()
         .map(this::createBookingInternal)
         .map(this::toResponseDto)
         .toList();
@@ -165,18 +190,21 @@ public class BookingService {
 
   public List<BookingResponseDto> createBulkBookingsWithoutTransaction(
         List<BookingRequestDto> bookingDtos) {
-    LOG.info("Creating bulk bookings WITHOUT transaction, size={}", bookingDtos.size());
+    List<BookingRequestDto> safeList = Optional.ofNullable(bookingDtos)
+        .orElseThrow(() -> new IllegalArgumentException("Booking list cannot be null"));
+    LOG.info("Creating bulk bookings WITHOUT transaction, size={}", safeList.size());
     List<BookingResponseDto> successful = new java.util.ArrayList<>();
     java.util.Map<String, String> failedOperations = new java.util.LinkedHashMap<>();
 
-    for (int i = 0; i < bookingDtos.size(); i++) {
-      BookingRequestDto dto = bookingDtos.get(i);
+    for (int i = 0; i < safeList.size(); i++) {
+      BookingRequestDto dto = safeList.get(i);
       String operationKey = "operation_" + (i + 1);
       try {
         Booking saved = createBookingInternal(dto);
         successful.add(toResponseDto(saved));
       } catch (RuntimeException ex) {
-        String message = ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage();
+        String message = ex.getMessage() == null
+            ? ex.getClass().getSimpleName() : ex.getMessage();
         failedOperations.put(operationKey, message);
         LOG.warn("Failed to create booking in non-transactional bulk: {} - {}",
             operationKey, message);
@@ -196,48 +224,50 @@ public class BookingService {
   }
 
   private Booking createBookingInternal(BookingRequestDto bookingDto) {
+    BookingRequestDto safeDto = Optional.ofNullable(bookingDto)
+        .orElseThrow(() -> new IllegalArgumentException("Booking data cannot be null"));
     LOG.info("Creating new booking");
-    if (!bookingDto.isValid()) {
+    if (!safeDto.isValid()) {
       throw new IllegalArgumentException(
-          "Either existing clientId or new"
-          + " client data (firstName, lastName, email) must be provided");
+          "Either existing clientId or new client data "
+          + "(firstName, lastName, email) must be provided");
     }
 
     Client client;
-    if (bookingDto.getClientId() != null) {
-      client = clientRepository.findById(bookingDto.getClientId())
+    if (safeDto.getClientId() != null) {
+      client = clientRepository.findById(safeDto.getClientId())
           .orElseThrow(() -> new NoSuchElementException(
-              "Client not found with id: " + bookingDto.getClientId()));
+              "Client not found with id: " + safeDto.getClientId()));
       LOG.debug("Using existing client id={}", client.getId());
     } else {
-      if (clientRepository.findByEmail(bookingDto.getEmail()).isPresent()) {
+      if (clientRepository.findByEmail(safeDto.getEmail()).isPresent()) {
         throw new IllegalArgumentException(
-            "Client with email " + bookingDto.getEmail() + " already exists");
+            "Client with email " + safeDto.getEmail() + " already exists");
       }
-      if (bookingDto.getPhone() != null) {
-        if (clientRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+      if (safeDto.getPhone() != null) {
+        if (clientRepository.findByPhone(safeDto.getPhone()).isPresent()) {
           throw new IllegalArgumentException(
-              "Client with phone " + bookingDto.getPhone() + " already exists");
+              "Client with phone " + safeDto.getPhone() + " already exists");
         }
-        if (guideRepository.findByPhone(bookingDto.getPhone()).isPresent()) {
+        if (guideRepository.findByPhone(safeDto.getPhone()).isPresent()) {
           throw new IllegalArgumentException(
-              "Phone " + bookingDto.getPhone() + " is already used by a guide");
+              "Phone " + safeDto.getPhone() + " is already used by a guide");
         }
       }
       Client newClient = new Client();
-      newClient.setFirstName(bookingDto.getFirstName());
-      newClient.setLastName(bookingDto.getLastName());
-      newClient.setEmail(bookingDto.getEmail());
-      newClient.setPhone(bookingDto.getPhone());
+      newClient.setFirstName(safeDto.getFirstName());
+      newClient.setLastName(safeDto.getLastName());
+      newClient.setEmail(safeDto.getEmail());
+      newClient.setPhone(safeDto.getPhone());
       client = clientRepository.save(newClient);
       LOG.debug("Created new client id={}", client.getId());
     }
 
-    Tour tour = tourRepository.findById(bookingDto.getTourId())
+    Tour tour = tourRepository.findById(safeDto.getTourId())
         .orElseThrow(() -> new NoSuchElementException(
-            "Tour not found with id: " + bookingDto.getTourId()));
+            "Tour not found with id: " + safeDto.getTourId()));
 
-    Booking booking = bookingMapper.toEntity(bookingDto);
+    Booking booking = bookingMapper.toEntity(safeDto);
     booking.setClient(client);
     booking.setTour(tour);
     booking = bookingRepository.save(booking);
@@ -247,16 +277,22 @@ public class BookingService {
   }
 
   private BookingResponseDto toResponseDto(Booking booking) {
-    return bookingMapper.toResponseDto(booking);
+    return Optional.ofNullable(booking)
+        .map(bookingMapper::toResponseDto)
+        .orElseThrow(() -> new IllegalArgumentException("Booking cannot be null"));
   }
 
   private BookingResponseDto toResponseDto(BookingNativeProjection proj) {
-    BookingResponseDto dto = new BookingResponseDto();
-    dto.setId(proj.getId());
-    dto.setBookingDate(proj.getBookingDate());
-    dto.setClientId(proj.getClientId());
-    dto.setTourId(proj.getTourId());
-    dto.setStatus(proj.getStatus());
-    return dto;
+    return Optional.ofNullable(proj)
+        .map(p -> {
+          BookingResponseDto dto = new BookingResponseDto();
+          dto.setId(p.getId());
+          dto.setBookingDate(p.getBookingDate());
+          dto.setClientId(p.getClientId());
+          dto.setTourId(p.getTourId());
+          dto.setStatus(p.getStatus());
+          return dto;
+        })
+        .orElseThrow(() -> new IllegalArgumentException("Projection cannot be null"));
   }
 }

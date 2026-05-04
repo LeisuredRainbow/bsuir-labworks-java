@@ -13,8 +13,9 @@ import jakarta.validation.constraints.Positive;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -97,7 +98,10 @@ public class BookingController {
   public Page<BookingResponseDto> searchByClientLastNameJpql(
       @Parameter(description = "Client last name", example = "Vader")
       @RequestParam @NotBlank(message = "Last name must not be blank") String lastName,
-      @PageableDefault(size = 10) Pageable pageable) {
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(required = false) String sort) {
+    Pageable pageable = createPageable(page, size, sort);
     return bookingService.searchBookingsByClientLastNameJpql(lastName, pageable);
   }
 
@@ -106,7 +110,10 @@ public class BookingController {
   public Page<BookingResponseDto> searchByClientLastNameNative(
       @Parameter(description = "Client last name", example = "Vader")
       @RequestParam @NotBlank(message = "Last name must not be blank") String lastName,
-      @PageableDefault(size = 10) Pageable pageable) {
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(required = false) String sort) {
+    Pageable pageable = createPageable(page, size, sort);
     return bookingService.searchBookingsByClientLastNameNative(lastName, pageable);
   }
 
@@ -126,5 +133,18 @@ public class BookingController {
       @RequestBody @Valid @NotEmpty(message = "Booking list cannot be empty")
       List<BookingRequestDto> bookingDtos) {
     return bookingService.createBulkBookingsWithoutTransaction(bookingDtos);
+  }
+
+  private Pageable createPageable(int page, int size, String sort) {
+    if (sort == null || sort.isBlank()) {
+      return PageRequest.of(page, size);
+    }
+    String[] parts = sort.split(",");
+    if (parts.length == 1) {
+      return PageRequest.of(page, size, Sort.by(parts[0]));
+    }
+    Sort.Direction direction = parts[1].equalsIgnoreCase("desc")
+        ? Sort.Direction.DESC : Sort.Direction.ASC;
+    return PageRequest.of(page, size, Sort.by(direction, parts[0]));
   }
 }

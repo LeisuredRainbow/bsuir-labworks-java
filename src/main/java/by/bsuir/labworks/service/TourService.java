@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,23 +40,29 @@ public class TourService {
   }
 
   public List<TourResponseDto> getToursByCountry(String country) {
-    LOG.debug("Fetching tours by country: {}", country);
-    return tourRepository.findByCountry(country).stream()
+    String safeCountry = Optional.ofNullable(country)
+        .orElseThrow(() -> new IllegalArgumentException("Country cannot be null"));
+    LOG.debug("Fetching tours by country: {}", safeCountry);
+    return tourRepository.findByCountry(safeCountry).stream()
         .map(tourMapper::toResponseDto)
         .toList();
   }
 
   public TourResponseDto getTourById(Long id) {
-    LOG.debug("Fetching tour by id={}", id);
-    Tour tour = tourRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.debug("Fetching tour by id={}", safeId);
+    Tour tour = tourRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + safeId));
     return tourMapper.toResponseDto(tour);
   }
 
   public TourResponseDto createTour(TourRequestDto tourDto) {
+    TourRequestDto safeDto = Optional.ofNullable(tourDto)
+        .orElseThrow(() -> new IllegalArgumentException("Tour data cannot be null"));
     LOG.info("Creating new tour");
-    Tour tour = tourMapper.toEntity(tourDto);
-    setHotelAndGuideRelations(tour, tourDto);
+    Tour tour = tourMapper.toEntity(safeDto);
+    setHotelAndGuideRelations(tour, safeDto);
     tour = tourRepository.save(tour);
     LOG.info("Tour created with id={}", tour.getId());
     return tourMapper.toResponseDto(tour);
@@ -63,11 +70,15 @@ public class TourService {
 
   @Transactional
   public TourResponseDto updateTour(Long id, TourRequestDto tourDto) {
-    LOG.info("Updating tour id={}", id);
-    Tour existingTour = tourRepository.findById(id)
-        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + id));
-    tourMapper.updateEntity(tourDto, existingTour);
-    setHotelAndGuideRelations(existingTour, tourDto);
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    TourRequestDto safeDto = Optional.ofNullable(tourDto)
+        .orElseThrow(() -> new IllegalArgumentException("Tour data cannot be null"));
+    LOG.info("Updating tour id={}", safeId);
+    Tour existingTour = tourRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException("Tour not found with id: " + safeId));
+    tourMapper.updateEntity(safeDto, existingTour);
+    setHotelAndGuideRelations(existingTour, safeDto);
     existingTour = tourRepository.save(existingTour);
     LOG.info("Tour updated id={}", existingTour.getId());
     return tourMapper.toResponseDto(existingTour);
@@ -106,36 +117,44 @@ public class TourService {
   }
 
   public List<TourResponseDto> getToursByPrice(BigDecimal price) {
-    LOG.debug("Fetching tours by exact price: {}", price);
-    return tourRepository.findByPrice(price).stream()
+    BigDecimal safePrice = Optional.ofNullable(price)
+        .orElseThrow(() -> new IllegalArgumentException("Price cannot be null"));
+    LOG.debug("Fetching tours by exact price: {}", safePrice);
+    return tourRepository.findByPrice(safePrice).stream()
         .map(tourMapper::toResponseDto)
         .toList();
   }
 
   public List<TourResponseDto> getToursByMinPrice(BigDecimal minPrice) {
-    LOG.debug("Fetching tours with price >= {}", minPrice);
-    return tourRepository.findByPriceGreaterThanEqual(minPrice).stream()
+    BigDecimal safeMinPrice = Optional.ofNullable(minPrice)
+        .orElseThrow(() -> new IllegalArgumentException("Minimum price cannot be null"));
+    LOG.debug("Fetching tours with price >= {}", safeMinPrice);
+    return tourRepository.findByPriceGreaterThanEqual(safeMinPrice).stream()
         .map(tourMapper::toResponseDto)
         .toList();
   }
 
   public List<TourResponseDto> getToursByMaxPrice(BigDecimal maxPrice) {
-    LOG.debug("Fetching tours with price <= {}", maxPrice);
-    return tourRepository.findByPriceLessThanEqualWithGraph(maxPrice).stream()
+    BigDecimal safeMaxPrice = Optional.ofNullable(maxPrice)
+        .orElseThrow(() -> new IllegalArgumentException("Maximum price cannot be null"));
+    LOG.debug("Fetching tours with price <= {}", safeMaxPrice);
+    return tourRepository.findByPriceLessThanEqualWithGraph(safeMaxPrice).stream()
         .map(tourMapper::toResponseDto)
         .toList();
   }
 
   @Transactional
   public void deleteTour(Long id) {
-    LOG.info("Deleting tour id={}", id);
-    if (!tourRepository.existsById(id)) {
-      throw new NoSuchElementException("Tour not found with id: " + id);
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.info("Deleting tour id={}", safeId);
+    if (!tourRepository.existsById(safeId)) {
+      throw new NoSuchElementException("Tour not found with id: " + safeId);
     }
-    if (bookingRepository.existsByTourId(id)) {
+    if (bookingRepository.existsByTourId(safeId)) {
       throw new IllegalStateException("Cannot delete tour with existing bookings");
     }
-    tourRepository.deleteById(id);
-    LOG.info("Tour deleted id={}", id);
+    tourRepository.deleteById(safeId);
+    LOG.info("Tour deleted id={}", safeId);
   }
 }
