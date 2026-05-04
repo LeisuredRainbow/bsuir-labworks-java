@@ -141,49 +141,13 @@ public class BookingService {
   @Transactional(readOnly = true)
   public Page<BookingResponseDto> searchBookingsByClientLastNameJpql(
         String lastName, Pageable pageable) {
-    String safeLastName = Optional.ofNullable(lastName)
-        .orElseThrow(() -> new IllegalArgumentException(LAST_NAME_CANNOT_BE_NULL));
-    Pageable safePageable = Optional.ofNullable(pageable)
-        .orElseThrow(() -> new IllegalArgumentException(PAGEABLE_CANNOT_BE_NULL));
-    LOG.debug("JPQL search bookings by client last name: {}", safeLastName);
-    String sortStr = safePageable.getSort().toString();
-    BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
-        safePageable.getPageSize(), sortStr);
-    Page<BookingResponseDto> cached = bookingSearchCache.get(key);
-    if (cached != null) {
-      LOG.debug("JPQL search: result from cache");
-      return cached;
-    }
-    LOG.debug("JPQL search: cache miss, querying database");
-    Page<Booking> bookings = bookingRepository.findBookingsByClientLastNameJpql(
-        safeLastName, safePageable);
-    Page<BookingResponseDto> result = bookings.map(bookingMapper::toResponseDto);
-    bookingSearchCache.put(key, result);
-    return result;
+    return searchWithCache(lastName, pageable, false);
   }
 
   @Transactional(readOnly = true)
   public Page<BookingResponseDto> searchBookingsByClientLastNameNative(
         String lastName, Pageable pageable) {
-    String safeLastName = Optional.ofNullable(lastName)
-        .orElseThrow(() -> new IllegalArgumentException(LAST_NAME_CANNOT_BE_NULL));
-    Pageable safePageable = Optional.ofNullable(pageable)
-        .orElseThrow(() -> new IllegalArgumentException(PAGEABLE_CANNOT_BE_NULL));
-    LOG.debug("Native search bookings by client last name: {}", safeLastName);
-    String sortStr = safePageable.getSort().toString();
-    BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
-        safePageable.getPageSize(), sortStr);
-    Page<BookingResponseDto> cached = bookingSearchCache.get(key);
-    if (cached != null) {
-      LOG.debug("Native search: result from cache");
-      return cached;
-    }
-    LOG.debug("Native search: cache miss, querying database");
-    Page<BookingNativeProjection> projections =
-        bookingRepository.findBookingsByClientLastNameNative(safeLastName, safePageable);
-    Page<BookingResponseDto> result = projections.map(this::toResponseDto);
-    bookingSearchCache.put(key, result);
-    return result;
+    return searchWithCache(lastName, pageable, true);
   }
 
   @Transactional
@@ -283,6 +247,37 @@ public class BookingService {
     bookingSearchCache.invalidateAll();
     LOG.info("Booking created with id={}", booking.getId());
     return booking;
+  }
+
+  private Page<BookingResponseDto> searchWithCache(String lastName,
+      Pageable pageable, boolean nativeQuery) {
+    String safeLastName = Optional.ofNullable(lastName)
+        .orElseThrow(() -> new IllegalArgumentException(LAST_NAME_CANNOT_BE_NULL));
+    Pageable safePageable = Optional.ofNullable(pageable)
+        .orElseThrow(() -> new IllegalArgumentException(PAGEABLE_CANNOT_BE_NULL));
+    String queryType = nativeQuery ? "Native" : "JPQL";
+    LOG.debug("{} search bookings by client last name: {}", queryType, safeLastName);
+    String sortStr = safePageable.getSort().toString();
+    BookingSearchKey key = new BookingSearchKey(safeLastName, safePageable.getPageNumber(),
+        safePageable.getPageSize(), sortStr);
+    Page<BookingResponseDto> cached = bookingSearchCache.get(key);
+    if (cached != null) {
+      LOG.debug("{} search: result from cache", queryType);
+      return cached;
+    }
+    LOG.debug("{} search: cache miss, querying database", queryType);
+    Page<BookingResponseDto> result;
+    if (nativeQuery) {
+      Page<BookingNativeProjection> projections = bookingRepository
+          .findBookingsByClientLastNameNative(safeLastName, safePageable);
+      result = projections.map(this::toResponseDto);
+    } else {
+      Page<Booking> bookings = bookingRepository
+          .findBookingsByClientLastNameJpql(safeLastName, safePageable);
+      result = bookings.map(bookingMapper::toResponseDto);
+    }
+    bookingSearchCache.put(key, result);
+    return result;
   }
 
   private BookingResponseDto toResponseDto(Booking booking) {
