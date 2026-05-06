@@ -34,10 +34,10 @@ class AsyncTaskCounterServiceTest {
     assertThat(metrics.getRunning()).isEqualTo(1);
     counterService.decrementRunning();
     metrics = counterService.getMetrics();
-    assertThat(metrics.getRunning()).isEqualTo(0);
+    assertThat(metrics.getRunning()).isZero();
     counterService.decrementRunning();
     metrics = counterService.getMetrics();
-    assertThat(metrics.getRunning()).isEqualTo(0);
+    assertThat(metrics.getRunning()).isZero();
   }
 
   @Test
@@ -52,9 +52,9 @@ class AsyncTaskCounterServiceTest {
   @Test
   void initialMetricsShouldBeZero() {
     AsyncTaskMetricsDto metrics = counterService.getMetrics();
-    assertThat(metrics.getSubmitted()).isEqualTo(0);
-    assertThat(metrics.getRunning()).isEqualTo(0);
-    assertThat(metrics.getSucceeded()).isEqualTo(0);
-    assertThat(metrics.getFailed()).isEqualTo(0);
+    assertThat(metrics.getSubmitted()).isZero();
+    assertThat(metrics.getRunning()).isZero();
+    assertThat(metrics.getSucceeded()).isZero();
+    assertThat(metrics.getFailed()).isZero();
   }
 }

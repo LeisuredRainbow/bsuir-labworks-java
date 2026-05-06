@@ -11,7 +11,7 @@ class BookingSearchKeyTest {
     BookingSearchKey key1 = new BookingSearchKey("Smith", 0, 10, "id: ASC");
     BookingSearchKey key2 = new BookingSearchKey("Smith", 0, 10, "id: ASC");
     assertThat(key1).isEqualTo(key2);
-    assertThat(key1.hashCode()).isEqualTo(key2.hashCode());
+    assertThat(key1).hasSameHashCodeAs(key2);
   }
 
   @Test
