@@ -303,10 +303,10 @@ public class BookingService {
   @Transactional
   public void confirmBooking(Long id) {
     Long safeId = Optional.ofNullable(id)
-        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+        .orElseThrow(() -> new IllegalArgumentException(ID_CANNOT_BE_NULL));
     LOG.info("Confirming booking id={}", safeId);
     Booking booking = bookingRepository.findById(safeId)
-        .orElseThrow(() -> new NoSuchElementException("Booking not found with id: " + safeId));
+        .orElseThrow(() -> new NoSuchElementException(BOOKING_NOT_FOUND_MSG + safeId));
     if (booking.getStatus() == Booking.BookingStatus.CONFIRMED) {
       LOG.info("Booking id={} is already confirmed", safeId);
       return;
