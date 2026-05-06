@@ -13,6 +13,7 @@ application-*.yml
 *.log
 logs/
 logs/*.log
+*.log#
 
 ### STS ###
 .apt_generated
