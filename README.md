@@ -1,62 +1,19 @@
-# Лабораторная работа №4: Error Logging/Handling – Туристическое агентство
+# Лабораторные работы №1–6 – Туристическое агентство
 
 **Тема:** Туристическое агентство  
 **Выполнил:** Студент группы [450504] [Толкач Доминик Геннадьевич]  
 **GitHub:** [https://github.com/LeisuredRainbow/bsuir-labworks-java](https://github.com/LeisuredRainbow/bsuir-labworks-java)
 
-## Описание
-
-Данная лабораторная работа расширяет функциональность предыдущих работ добавлением **глобальной обработки ошибок**, **валидации входных данных**, **логирования с ротацией**, **AOP для логирования времени выполнения сервисных методов** и **документации API через Swagger/OpenAPI**.
-
-Все сообщения об ошибках и логи переведены на **английский язык**.
-
 ---
 
-## Реализованные возможности
+## Описание проекта
 
-### 1. Глобальная обработка ошибок (GlobalExceptionHandler)
-- Перехватывает и обрабатывает:
-  - `NoSuchElementException`, `EmptyResultDataAccessException` → **404 Not Found**
-  - `IllegalArgumentException`, `IllegalStateException` → **400 Bad Request**
-  - `MethodArgumentNotValidException`, `BindException`, `ConstraintViolationException` → **400 Bad Request** с деталями валидации
-  - `DataIntegrityViolationException` → **409 Conflict**
-  - `MethodArgumentTypeMismatchException` → **400 Bad Request**
-  - `HttpMessageNotReadableException` (некорректный JSON) → **400 Bad Request**
-  - `Exception` → **500 Internal Server Error** (страховка)
-- Единый формат ответа: `ErrorResponseDto` (timestamp, status, error, message, path, validationErrors)
-
-### 2. Валидация входных данных
-- Используются аннотации Jakarta Validation (`@NotNull`, `@NotBlank`, `@Email`, `@Positive`, `@Future`, `@Size`, `@Min`, `@Max`).
-- В контроллерах – `@Valid` для `@RequestBody` и `@Validated` для параметров `@RequestParam`/`@PathVariable`.
-
-### 3. Логирование (Logback)
-- Конфигурация: `logback-spring.xml`
-- Вывод в консоль и в файл `logs/travel-agency.log`
-- **Ротация**: по размеру (10 KB), архивация `.gz`, история 30 дней, максимальный размер всех архивов 1 GB.
-- Уровни:
-  - `by.bsuir.labworks` – `DEBUG`
-  - `org.hibernate.SQL` – `INFO`
-  - `org.hibernate.orm.jdbc.bind` – `WARN`
-  - `root` – `INFO`
-
-### 4. AOP (логирование времени выполнения сервисных методов)
-- Аспект `ServiceExecutionTimeLoggingAspect`
-- Применяется ко всем методам пакета `by.bsuir.labworks.service..*`
-- Логирует время выполнения в milliseconds (формат `X.XXX ms`)
-
-### 5. Документация API (Swagger/OpenAPI)
-- Конфигурация: `OpenApiConfig` (заголовок, версия, описание)
-- Контроллеры аннотированы `@Tag`, методы – `@Operation`, параметры – `@Parameter`
-- DTO содержат `@Schema` с примерами и описаниями
-- Доступно по адресу: `http://localhost:8080/swagger-ui.html`
-
-### 6. Строгий JSON
-- В `application.properties` включено `spring.jackson.deserialization.fail-on-unknown-properties=true`
-- Любое неизвестное поле в JSON вызывает **400 Bad Request**
+RESTful API для управления туристическим агентством. Позволяет работать с клиентами, гидами, отелями, турами и бронированиями. Реализована многоуровневая архитектура, валидация, глобальная обработка ошибок, логирование, документирование API (Swagger/OpenAPI), кэширование запросов, batch-операции и асинхронное выполнение бизнес-операций.
 
 ---
 
 ## Технологии
+
 - Java 21 (совместима с Java 17)
 - Spring Boot 4.0.6
 - Spring Web, Spring Data JPA, Spring AOP
@@ -65,13 +22,73 @@
 - Jakarta Bean Validation
 - Logback (ротация)
 - Swagger/OpenAPI (springdoc-openapi-starter-webmvc-ui)
+- JUnit 5, Mockito
 - Maven
 - Checkstyle (Google Java Style)
 - SonarCloud (0 нарушений)
 
 ---
 
-## Запуск
+## Архитектура
+
+Проект построен по многослойной архитектуре:
+
+Controller → Service → Repository → Database
+
+- **Контроллеры** – принимают HTTP-запросы и возвращают ответы.
+- **Сервисы** – содержат бизнес-логику.
+- **Репозитории** – работают с базой данных через Spring Data JPA.
+- **DTO + MapStruct** – отделяют внутренние сущности от API-ответов.
+
+---
+
+## Реализованные возможности
+
+### 1. Basic REST service
+- CRUD-эндпоинты для всех сущностей.
+- `GET` с `@RequestParam` и `@PathVariable`.
+- DTO и MapStruct-мапперы.
+- Код соответствует Google Java Style (Checkstyle 0 ошибок).
+
+### 2. JPA (Hibernate/Spring Data)
+- Модель из 5 сущностей: `Client`, `Guide`, `Hotel`, `Tour`, `Booking`.
+- Связи OneToMany (`Client → Bookings`, `Tour → Bookings`) и ManyToMany (`Tour ↔ Hotel`, `Tour ↔ Guide`).
+- Настроены `CascadeType` и `FetchType`, решена проблема **N+1** через `JOIN FETCH` / `@EntityGraph`.
+- Метод `createBooking()` сохраняет несколько связанных сущностей (клиента и бронирование) в одной транзакции.
+- Продемонстрировано **частичное сохранение без `@Transactional`** и **полный откат с `@Transactional`** при bulk-операциях.
+
+### 3. Data caching
+- In-memory кэш `BookingSearchCache` на основе `HashMap` для результатов поиска бронирований по фамилии клиента.
+- Ключ `BookingSearchKey` включает все параметры запроса (корректные `equals()` и `hashCode()`).
+- Инвалидация кэша при создании, обновлении и удалении бронирований.
+
+### 4. Error logging/handling
+- Глобальный обработчик ошибок `GlobalExceptionHandler` (`@ControllerAdvice`).
+- Единый формат ответа: `ErrorResponseDto` с полями `timestamp`, `status`, `error`, `message`, `path`, `validationErrors`.
+- Валидация входных данных через `@Valid` и аннотации Jakarta Bean Validation.
+- Логирование в консоль и файл `logs/travel-agency.log` с ротацией (10 KB, архивация `.gz`, история 30 дней, максимум 1 GB).
+- AOP-аспект `ServiceExecutionTimeLoggingAspect` для логирования времени выполнения сервисных методов.
+- Swagger/OpenAPI с описанием эндпоинтов и DTO.
+
+### 5. Batch data processing & Testing
+- Транзакционная bulk-операция: `POST /api/bookings/bulk` (всё или ничего).
+- Нетранзакционная bulk-операция: `POST /api/bookings/bulk/non-transactional` (частичное сохранение с детализацией ошибок через `PartialBulkOperationException`).
+- Активное использование **Stream API** и `Optional` в сервисном слое.
+- Unit-тесты (`BookingServiceTest`, `ClientServiceTest`, `GuideServiceTest`, `HotelServiceTest`, `TourServiceTest`) с Mockito.
+
+### 6. Concurrency
+- **Асинхронное подтверждение бронирования**:
+  - `POST /async/confirm?bookingId={id}` – запускает операцию, возвращает `taskId`.
+  - `GET /async/confirm/{taskId}` – статус задачи (`PENDING`, `RUNNING`, `SUCCESS`, `FAILED`).
+  - `GET /async/confirm/metrics` – метрики (`submitted`, `running`, `succeeded`, `failed`).
+  - Асинхронный воркер `@Async` с настраиваемой задержкой (`app.async.confirmation-delay-ms`).
+- **Потокобезопасные атомарные счётчики** (`AtomicLong`) для метрик.
+- **Демонстрация race condition**:
+  - `GET /concurrency/race-demo?threads=64&incrementsPerThread=10000` – показывает расхождение несинхронизированного счётчика и корректность `synchronized` и `AtomicInteger`.
+
+---
+
+## Запуск приложения
 
 ### Требования
 - PostgreSQL (установлен и запущен)
@@ -79,151 +96,141 @@
 - Maven
 
 ### Настройка базы данных
-1. Создайте базу `travel_agency` и пользователя `travel_user` с паролем.
+1. Создайте базу `travel_agency` и пользователя, например:
+   ```sql
+   CREATE USER travel_user WITH PASSWORD 'travel_pass';
+   CREATE DATABASE travel_agency OWNER travel_user;
 2. Установите переменные окружения:
-   ```bash
+   ```
    export DB_USERNAME=travel_user
    export DB_PASSWORD=travel_pass
-3. Убедитесь, что PostgreSQL запущен.
 
 ### Запуск приложения
 
-'''bash
-./mvnw spring-boot:run
+  ```
+  ./mvnw spring-boot:run
 
-После запуска:
+  После запуска:
 
-Swagger UI: http://localhost:8080/swagger-ui.html
+    Swagger UI: http://localhost:8080/swagger-ui.html
 
-Логи пишутся в logs/travel-agency.log
+    Логи: logs/travel-agency.log
+   ``` 
 
 ### Примеры запросов для демонстрации
 
-1. 400 Bad Request (неверный тип параметра)
-'''bash
-curl -X GET "http://localhost:8080/api/hotels/abc"
-Ответ: 400, Invalid value for parameter 'id': abc
+### Базовые операции
 
-2. 400 Bad Request (пустое имя клиента)
-'''bash
-curl -X POST http://localhost:8080/api/clients \
+  ```
+  # Получить все отели
+  curl http://localhost:8080/api/hotels
+
+  # Получить отель по адресу
+  curl http://localhost:8080/api/hotels/by-address?address=Minsk,Nezavisimosti%201
+
+  # Создать бронирование
+  curl -X POST http://localhost:8080/api/bookings \
+  -H "Content-Type: application/json" \
+  -d '{"clientId":1,"tourId":2,"bookingDate":"2026-12-25","status":"PENDING"}'
+  ```
+
+### Ошибки и валидация
+
+  ```
+  # 400 – неверный тип параметра
+  curl "http://localhost:8080/api/hotels/abc"
+
+  # 404 – несуществующий ресурс
+  curl "http://localhost:8080/api/hotels/9999"
+
+  # 400 – пустое имя клиента
+  curl -X POST http://localhost:8080/api/clients \
   -H "Content-Type: application/json" \
   -d '{"firstName":"","lastName":"Ivanov","email":"test@mail.com"}'
-Ответ: 400, validationErrors содержит firstName: First name is required
+  ```
+  
+### Bulk-операции
 
-3. 404 Not Found (несуществующий отель)
-'''bash
-curl -X GET http://localhost:8080/api/hotels/9999
-Ответ: 404, Hotel not found with id: 9999
-
-4. 409 Conflict (дубликат email клиента)
-'''bash
-# Сначала создать клиента
-curl -X POST http://localhost:8080/api/clients \
+  ```
+  # Транзакционная (всё или ничего)
+  curl -X POST http://localhost:8080/api/bookings/bulk \
   -H "Content-Type: application/json" \
-  -d '{"firstName":"John","lastName":"Doe","email":"conflict@test.com"}'
-# Повторить тот же email
-curl -X POST http://localhost:8080/api/clients \
+  -d '[{"clientId":1,"tourId":2,"bookingDate":"2026-12-25","status":"PENDING"},{"clientId":999,"tourId":2,"bookingDate":"2026-12-26","status":"PENDING"}]'
+
+  # Нетранзакционная (частичное сохранение)
+  curl -X POST http://localhost:8080/api/bookings/bulk/non-transactional \
   -H "Content-Type: application/json" \
-  -d '{"firstName":"Jane","lastName":"Roe","email":"conflict@test.com"}'
-Ответ: 409, нарушение уникальности
+  -d '[{"clientId":1,"tourId":2,"bookingDate":"2026-12-25","status":"PENDING"},{"clientId":999,"tourId":2,"bookingDate":"2026-12-26","status":"PENDING"}]'
+  ```
 
-5. 400 Bad Request (некорректный JSON – лишняя запятая)
-'''bash
-curl -X POST http://localhost:8080/api/hotels \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Test","address":"Address","stars":5,}'
-Ответ: 400, Malformed JSON request. Please check your request body syntax.
+### Асинхронное подтверждение бронирования
 
-6. Демонстрация AOP (логирование времени)
-'''bash
-curl "http://localhost:8080/api/bookings/search/by-client-last-name/jpql?lastName=Vader&page=0&size=5"
-В консоли/файле лога появится строка:
-BookingService.searchBookingsByClientLastNameJpql(..) executed in 12.345 ms
+  ```
+  # Запустить подтверждение (замените bookingId на существующий)
+  curl -X POST "http://localhost:8080/async/confirm?bookingId=7"
 
-7. Swagger UI
-Откройте в браузере: http://localhost:8080/swagger-ui.html
+  # Проверить статус задачи (подставьте полученный taskId)
+  curl "http://localhost:8080/async/confirm/90fb0f52-53e4-4dd0-bce8-67c20db4f4ce"
+
+  # Получить метрики
+  curl "http://localhost:8080/async/confirm/metrics"
+  ```
+
+Демонстрация race conditio
+
+  ```
+  # Запустить демонстрацию гонки потоков (50+ потоков)
+  curl "http://localhost:8080/concurrency/race-demo?threads=64&incrementsPerThread=10000"
+  ```
 
 ### Сборка и проверка качества
-Checkstyle
-'''bash
-./mvnw checkstyle:check
 
-Должно быть 0 ошибок.
+### Checkstyle
+
+  ```
+  ./mvnw checkstyle:check
+  ```
 
 ### Компиляция и тесты
 
-'''bash
-./mvnw clean compile
-./mvnw test
+  ```
+  ./mvnw clean compile
+  ./mvnw test
+  ```
 
 ### Статический анализ (SonarCloud)
 
-https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main
-– 0 нарушений по всем метрикам.
+  ```
+  https://sonarcloud.io/summary/new_code?id=LeisuredRainbow_bsuir-labworks-java&branch=main– 0 нарушений по всем метрикам.
+  ```
 
-### Структура проекта (новые/изменённые файлы для лабораторной №4)
+### Структура проекта (основные пакеты)
 
 src/main/java/by/bsuir/labworks/
 
-├── exception/
+├── aspect/          – Аспекты (логирование времени)
 
-│   ├── ErrorResponseDto.java
+├── cache/           – Кэш поиска бронирований
 
-│   └── GlobalExceptionHandler.java
+├── config/          – Конфигурация (OpenAPI, AsyncProperties, WebConfig)
 
-├── aspect/
+├── controllers/     – REST-контроллеры
 
-│   └── ServiceExecutionTimeLoggingAspect.java
+├── dto/             – DTO для запросов/ответов
 
-├── config/
+├── entity/          – JPA-сущности
 
-│   └── OpenApiConfig.java
+├── exception/       – Глобальный обработчик и исключения
 
-├── controllers/
+├── mapper/          – MapStruct-мапперы
 
-│   ├── BookingController.java
+├── projection/      – Проекции для нативных запросов
 
-│   ├── ClientController.java
+├── repository/      – Репозитории Spring Data JPA
 
-│   ├── GuideController.java
-
-│   ├── HotelController.java
-
-│   └── TourController.java
-
-├── dto/
-
-│   ├── BookingRequestDto.java
-
-│   ├── ClientRequestDto.java
-
-│   ├── GuideRequestDto.java
-
-│   ├── HotelRequestDto.java
-
-│   ├── TourRequestDto.java
-
-│   └── ... (остальные DTO)
-
-├── service/
-
-│   ├── BookingService.java
-
-│   ├── ClientService.java
-
-│   ├── GuideService.java
-
-│   ├── HotelService.java
-
-│   └── TourService.java
-
-└── resources/
-
-    ├── logback-spring.xml
-
-    └── application.properties
+└── service/         – Бизнес-логика
 
 ### Автор
 
 Студент группы [450504] [Толкач Доминик Геннадьевич]
+GitHub: https://github.com/LeisuredRainbow/bsuir-labworks-java

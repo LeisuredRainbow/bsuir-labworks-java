@@ -31,7 +31,8 @@ public class RaceConditionDemoService {
         executorService.execute(() -> {
           try {
             startedLatch.await();
-            for (int incrementNumber = 0; incrementNumber < incrementsPerThread; incrementNumber++) {
+            for (int incrementNumber = 0; incrementNumber
+                < incrementsPerThread; incrementNumber++) {
               unsafeCounter.increment();
               synchronizedCounter.increment();
               atomicCounter.incrementAndGet();

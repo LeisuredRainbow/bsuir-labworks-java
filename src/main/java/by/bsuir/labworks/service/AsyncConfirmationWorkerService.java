@@ -45,7 +45,8 @@ public class AsyncConfirmationWorkerService {
       return CompletableFuture.failedFuture(ex);
     } catch (Exception ex) {
       LOG.error("Async confirmation failed for taskId={} bookingId={}", taskId, bookingId, ex);
-      String failureMessage = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
+      String failureMessage = ex.getMessage() != null ? ex.getMessage()
+          : ex.getClass().getSimpleName();
       asyncTaskRegistryService.markFailed(taskId, failureMessage);
       asyncTaskCounterService.incrementFailed();
       return CompletableFuture.failedFuture(ex);
