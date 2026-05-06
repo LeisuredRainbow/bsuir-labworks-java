@@ -299,4 +299,24 @@ public class BookingService {
         })
         .orElseThrow(() -> new IllegalArgumentException(PROJECTION_CANNOT_BE_NULL));
   }
+
+  @Transactional
+  public void confirmBooking(Long id) {
+    Long safeId = Optional.ofNullable(id)
+        .orElseThrow(() -> new IllegalArgumentException("ID cannot be null"));
+    LOG.info("Confirming booking id={}", safeId);
+    Booking booking = bookingRepository.findById(safeId)
+        .orElseThrow(() -> new NoSuchElementException("Booking not found with id: " + safeId));
+    if (booking.getStatus() == Booking.BookingStatus.CONFIRMED) {
+      LOG.info("Booking id={} is already confirmed", safeId);
+      return;
+    }
+    if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
+      throw new IllegalStateException("Cannot confirm a cancelled booking");
+    }
+    booking.setStatus(Booking.BookingStatus.CONFIRMED);
+    bookingRepository.save(booking);
+    bookingSearchCache.invalidateAll();
+    LOG.info("Booking confirmed id={}", safeId);
+  }
 }
