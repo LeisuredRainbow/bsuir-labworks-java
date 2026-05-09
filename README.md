@@ -230,7 +230,7 @@ src/main/java/by/bsuir/labworks/
 
 └── service/         – Бизнес-логика
 
-### Автор
+### Автор 
 
 Студент группы [450504] [Толкач Доминик Геннадьевич]
 GitHub: https://github.com/LeisuredRainbow/bsuir-labworks-java
