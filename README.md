@@ -1,4 +1,4 @@
-# Лабораторные работы №1–6 – Туристическое агентство
+# Travel Agency API
 
 **Тема:** Туристическое агентство  
 **Выполнил:** Студент группы [450504] [Толкач Доминик Геннадьевич]  
@@ -86,9 +86,29 @@ Controller → Service → Repository → Database
 - **Демонстрация race condition**:
   - `GET /concurrency/race-demo?threads=64&incrementsPerThread=10000` – показывает расхождение несинхронизированного счётчика и корректность `synchronized` и `AtomicInteger`.
 
+### 7. Client (SPA)
+- **React-приложение** (TypeScript, Vite, TanStack Router, TanStack Query, Tailwind CSS).
+- Отдельный репозиторий: [travel-agency-frontend](https://github.com/LeisuredRainbow/travel-agency-frontend).
+- Реализованы **CRUD-операции** для всех сущностей, отображение связей **OneToMany** и **ManyToMany**, фильтрация туров.
+- Развёрнут на Render как **Static Site**.
+
+### 8. Deploy
+- **Dockerfile** с многоэтапной сборкой (maven + jre) и healthcheck.
+- **Docker Compose** (приложение + PostgreSQL) с использованием переменных окружения.
+- Размещение на бесплатном PaaS **[Render.com](https://render.com)**.
+- **CI/CD** (GitHub Actions): автоматические сборка, тестирование, анализ SonarCloud.
+- Автоматический деплой при пуше в ветку `main`.
+- Консольное логирование на проде (`LOGGING_CONFIG=classpath:logback-render.xml`).
+
 ---
 
 ## Запуск приложения
+
+### Продакшен-окружение
+
+Приложение развёрнуто на [Render.com](https://render.com).
+- **Swagger UI:** [https://travel-agency-api-ddxk.onrender.com](https://travel-agency-api-ddxk.onrender.com)
+- **Health check:** [https://travel-agency-api-ddxk.onrender.com/actuator/health](https://travel-agency-api-ddxk.onrender.com/actuator/health)
 
 ### Требования
 - PostgreSQL (установлен и запущен)
