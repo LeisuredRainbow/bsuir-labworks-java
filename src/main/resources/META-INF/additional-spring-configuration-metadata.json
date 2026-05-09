@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "app.async.confirmation-delay-ms",
+      "type": "java.lang.Long",
+      "description": "Delay in milliseconds before async confirmation executes.",
+      "defaultValue": 15000
+    }
+  ]
+}

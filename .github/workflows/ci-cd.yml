@@ -1,0 +1,56 @@
+name: CI-CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: travel_agency
+          POSTGRES_USER: travel_user
+          POSTGRES_PASSWORD: travel_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U travel_user -d travel_agency"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: travel_agency
+          DB_USERNAME: travel_user
+          DB_PASSWORD: travel_pass
+        run: ./mvnw -B clean verify
+
+      - name: SonarCloud analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./mvnw sonar:sonar -Dsonar.qualitygate.wait=true
+
+      - name: Build Docker image
+        run: docker build -t travel-agency:${{ github.sha }} .
