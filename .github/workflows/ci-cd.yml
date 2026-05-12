@@ -9,6 +9,9 @@ concurrency:
   group: ci-cd-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -16,13 +19,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: travel_agency
-          POSTGRES_USER: travel_user
-          POSTGRES_PASSWORD: travel_pass
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U travel_user -d travel_agency"
+          --health-cmd="pg_isready -U postgres -d postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -30,8 +33,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
@@ -43,15 +45,44 @@ jobs:
         env:
           DB_HOST: localhost
           DB_PORT: 5432
-          DB_NAME: travel_agency
-          DB_USERNAME: travel_user
-          DB_PASSWORD: travel_pass
+          DB_NAME: postgres
+          DB_USER: postgres
+          DB_PASSWORD: ""
         run: ./mvnw -B clean verify
 
-      - name: SonarCloud analysis
+      - name: SonarCloud Scan
+        run: ./mvnw sonar:sonar -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./mvnw sonar:sonar -Dsonar.qualitygate.wait=true
 
       - name: Build Docker image
         run: docker build -t travel-agency:${{ github.sha }} .
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          curl -X POST "$RENDER_DEPLOY_HOOK"
+
+      - name: Health check
+        run: |
+          for i in {1..12}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://travel-agency-api-ddxk.onrender.com/actuator/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Backend is healthy (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Waiting for backend to become healthy... attempt $i/12"
+            sleep 15
+          done
+          echo "❌ Backend health check failed"
+          exit 1
