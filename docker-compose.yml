@@ -3,15 +3,15 @@ services:
     image: postgres:16-alpine
     container_name: travel-db
     environment:
-      POSTGRES_DB: ${DB_NAME:-travel_agency}
-      POSTGRES_USER: ${DB_USERNAME:-travel_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-travel_pass}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-travel_user} -d ${DB_NAME:-travel_agency}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,11 +27,11 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-travel_agency}
-      DB_USERNAME: ${DB_USERNAME:-travel_user}
-      DB_PASSWORD: ${DB_PASSWORD:-travel_pass}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       PORT: 8080
-      JAVA_OPTS: ${JAVA_OPTS:-}
+      JAVA_OPTS: ${JAVA_OPTS}
     ports:
       - "${APP_PORT:-8080}:8080"
     healthcheck:

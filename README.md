@@ -116,14 +116,14 @@ Controller → Service → Repository → Database
 - Maven
 
 ### Настройка базы данных
-1. Создайте базу `travel_agency` и пользователя, например:
+1. Создайте базу `postgres` и пользователя, например:
    ```sql
-   CREATE USER travel_user WITH PASSWORD 'travel_pass';
-   CREATE DATABASE travel_agency OWNER travel_user;
+   CREATE USER your_user WITH PASSWORD 'your_password';
+   CREATE DATABASE postgres OWNER your_user;
 2. Установите переменные окружения:
    ```
-   export DB_USERNAME=travel_user
-   export DB_PASSWORD=travel_pass
+   export DB_USERNAME=your_user
+   export DB_PASSWORD=your_password
 
 ### Запуск приложения
 
